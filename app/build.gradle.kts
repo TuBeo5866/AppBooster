@@ -80,10 +80,10 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
 
 
-    // workManager
+    // WorkManager (background optimization with foreground notification)
+    implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
-    implementation(libs.androidx.work.runtime.ktx)
 
     // Material Icons Extended
     implementation(libs.androidx.compose.material3.icons.extended)

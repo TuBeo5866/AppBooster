@@ -203,6 +203,7 @@ abstract class BaseViewModel<UI_TYPE, UI_EVENT, UI_EFFECT>(
                             error = null
                         )
                     }
+
                     invokeOnCompletion?.invoke(true)
                 }
                 else -> handleError(

@@ -1,10 +1,10 @@
 package com.tony.appbooster.presentation.viewmodel.main
 
+import android.content.Context
 import androidx.lifecycle.viewModelScope
 import com.alkemy.boxapp.presentation.navigation.interfaces.NavigationManager
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.model.settings.AppOptimizationType
-import com.tony.appbooster.domain.repository.AdbConnectionState
 import com.tony.appbooster.domain.repository.AdbRepository
 import com.tony.appbooster.domain.usecase.ConnectAdbUseCase
 import com.tony.appbooster.domain.usecase.GetAdbConnectionConfigUseCase
@@ -14,7 +14,9 @@ import com.tony.appbooster.domain.usecase.UpdateAdbHostUseCase
 import com.tony.appbooster.domain.usecase.UpdateAdbPairingCodeUseCase
 import com.tony.appbooster.domain.usecase.UpdateAdbPortUseCase
 import com.tony.appbooster.presentation.viewmodel.base.BaseViewModel
+import com.tony.appbooster.presentation.worker.OptimizationWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -44,6 +46,7 @@ class MainViewModel @Inject constructor(
     private val savePairingCodeUseCase: UpdateAdbPairingCodeUseCase,
     private val getAdbConnectionConfigUseCase: GetAdbConnectionConfigUseCase,
     private val repository: AdbRepository,
+    @ApplicationContext private val appContext: Context,
     navigationManager: NavigationManager
 ) : BaseViewModel<MainUiModel, MainUiEvent, MainUiEffect>(navigationManager) {
 
@@ -145,15 +148,13 @@ class MainViewModel @Inject constructor(
     }
 
     /**
-     * Starts ART optimization using a predefined compile mode on the active ADB session.
-     * The progress is streamed from the repository, while the final result and errors
+     * Backwards-compatible API.
+     *
+     * The optimization workflow is now executed via WorkManager so it can continue in background.
+     * Prefer dispatching [MainUiEvent.OnStartOptimizationClicked] from the UI.
      */
     fun runAppOptimization() {
-        // Optimization mode is observed continuously; use the latest value.
-        val optimizationMode = uiState.value.data?.optimizationMode
-        if (optimizationMode != null) {
-            startOptimization(optimizationMode)
-        }
+        onStartOptimizationRequested()
     }
 
     /**
@@ -189,30 +190,48 @@ class MainViewModel @Inject constructor(
         when (event) {
             MainUiEvent.OnConnectClicked -> startConnectionSequence()
             MainUiEvent.OnStartOptimizationClicked -> onStartOptimizationRequested()
-            MainUiEvent.OnStopOptimizationClicked -> stopOptimization()
+            MainUiEvent.OnStopOptimizationClicked -> onStopOptimizationRequested()
         }
+    }
+
+    private fun onStopOptimizationRequested() {
+        // Cancel WorkManager so background execution stops and notification goes away.
+        OptimizationWorker.cancel(appContext)
+
+        // Also request repository-side cancellation immediately to update UI/progress flow.
+        stopOptimization()
     }
 
     /**
      * Validates the current shell connection before starting an optimization run.
      *
-     * We do **not** rely on the current [MainUiModel.connectionState] snapshot here because
-     * it can be stale at the time the user clicks the button (race between UI and flow
-     * collector). Instead we perform an explicit health check via [ConnectAdbUseCase].
+     * Flow:
+     * 1) Run [ConnectAdbUseCase]
+     * 2) On success → enqueue WorkManager job for optimization
+     *
+     * The WorkManager job handles the long-running optimization so it continues
+     * when the app is backgrounded. Notification progress is driven from
+     * [AdbRepository.optimizationProgress].
      */
     private fun onStartOptimizationRequested() {
-        executeAsync {
-            when (val connectionResult = connectAdbUseCase()) {
-                is Resource.Success -> {
-                    runAppOptimization()
-                }
+        val optimizationMode = uiState.value.data?.optimizationMode
+        if (optimizationMode == null) {
+            emitEffect(MainUiEffect.ShowSnackbar("Select an optimization mode first"))
+            return
+        }
 
-                is Resource.Error -> {
-                    // Provide quick user feedback while BaseViewModel error handling remains available.
-                    emitEffect(MainUiEffect.ShowSnackbar("Connect to ADB first to start optimization"))
-                    handleError(connectionResult)
+        launchUiStateUpdate(
+            dataFetchBlock = { connectAdbUseCase() },
+            skipLoading = true,
+            processSuccess = {
+                // Keep current UI data; repository flows will push connection/progress/log updates.
+                uiState.value.data ?: MainUiModel()
+            },
+            invokeOnCompletion = { success ->
+                if (success) {
+                    OptimizationWorker.enqueue(appContext, optimizationMode)
                 }
             }
-        }
+        )
     }
 }
