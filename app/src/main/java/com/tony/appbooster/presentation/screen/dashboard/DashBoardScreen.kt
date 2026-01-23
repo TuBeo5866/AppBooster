@@ -1,7 +1,8 @@
 package com.tony.appbooster.presentation.screen.dashboard
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.EaseInOutCubic
 import androidx.compose.animation.core.EaseOutBack
@@ -18,12 +19,9 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -45,6 +43,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Terminal
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.DoNotDisturbOn
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.RocketLaunch
 import androidx.compose.material.icons.rounded.Speed
@@ -68,10 +67,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -85,13 +83,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.tony.appbooster.domain.model.common.OptimizationResult
 import com.tony.appbooster.domain.model.settings.AppOptimizationType
-import com.tony.appbooster.domain.repository.AdbConnectionState
+import com.tony.appbooster.presentation.permission.NotificationPermissionManager
+import com.tony.appbooster.presentation.permission.NotificationPermissionRationaleDialog
 import com.tony.appbooster.presentation.screen.common.basescreen.AppBaseScreen
 import com.tony.appbooster.presentation.viewmodel.main.MainUiEffect
 import com.tony.appbooster.presentation.viewmodel.main.MainUiEvent
@@ -99,10 +101,40 @@ import com.tony.appbooster.presentation.viewmodel.main.MainUiModel
 import com.tony.appbooster.presentation.viewmodel.main.MainViewModel
 import kotlinx.coroutines.flow.collectLatest
 
+private const val POST_NOTIFICATIONS_PERMISSION = "android.permission.POST_NOTIFICATIONS"
+
 @Composable
 fun DashboardScreen(viewModel: MainViewModel) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+
+    val context = LocalContext.current
+
+    var showNotificationPermissionDialog by remember { mutableStateOf(false) }
+    var pendingOptimizationStart by remember { mutableStateOf(false) }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        if (pendingOptimizationStart) {
+            pendingOptimizationStart = false
+            viewModel.onEvent(MainUiEvent.OnStartOptimizationClicked)
+        }
+    }
+
+    if (showNotificationPermissionDialog) {
+        NotificationPermissionRationaleDialog(
+            onConfirm = {
+                showNotificationPermissionDialog = false
+                pendingOptimizationStart = true
+                notificationPermissionLauncher.launch(POST_NOTIFICATIONS_PERMISSION)
+            },
+            onDismiss = {
+                showNotificationPermissionDialog = false
+                viewModel.onEvent(MainUiEvent.OnStartOptimizationClicked)
+            }
+        )
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.uiEffect.collectLatest { effect ->
@@ -115,8 +147,15 @@ fun DashboardScreen(viewModel: MainViewModel) {
     AppBaseScreen(uiState = uiState) { model ->
         DashboardContent(
             model = model,
-            onStartOptimization = { viewModel.onEvent(MainUiEvent.OnStartOptimizationClicked) },
+            onStartOptimization = {
+                if (NotificationPermissionManager.shouldRequest(context)) {
+                    showNotificationPermissionDialog = true
+                } else {
+                    viewModel.onEvent(MainUiEvent.OnStartOptimizationClicked)
+                }
+            },
             onStopOptimization = { viewModel.onEvent(MainUiEvent.OnStopOptimizationClicked) },
+            onDismissResult = { viewModel.onEvent(MainUiEvent.OnDismissOptimizationResultClicked) },
             snackbarHostState = snackbarHostState
         )
     }
@@ -128,6 +167,7 @@ private fun DashboardContent(
     model: MainUiModel,
     onStartOptimization: () -> Unit,
     onStopOptimization: () -> Unit,
+    onDismissResult: () -> Unit,
     snackbarHostState: SnackbarHostState
 ) {
     val listState = rememberLazyListState()
@@ -169,7 +209,7 @@ private fun DashboardContent(
                 .padding(padding)
                 .fillMaxSize()
         ) {
-            HeroControlPanel(model, onStartOptimization, onStopOptimization)
+            HeroControlPanel(model, onStartOptimization, onStopOptimization, onDismissResult)
             TerminalSection(model.logs, listState)
         }
     }
@@ -183,7 +223,8 @@ private fun DashboardContent(
 private fun HeroControlPanel(
     model: MainUiModel,
     onStartOptimization: () -> Unit,
-    onStopOptimization: () -> Unit
+    onStopOptimization: () -> Unit,
+    onDismissResult: () -> Unit
 ) {
     val primaryColor = MaterialTheme.colorScheme.primary
     val tertiaryColor = MaterialTheme.colorScheme.tertiary
@@ -206,9 +247,8 @@ private fun HeroControlPanel(
         label = "cardElevation"
     )
 
-    // Completion banner is UI-only state: dismiss until next run.
-    val completionKey = "${model.optimizationProgress.totalCount}:${model.optimizationProgress.processedCount}:${model.optimizationProgress.progress}"
-    var isCompletionDismissed by remember(completionKey) { mutableStateOf(false) }
+    // Result banners are dismissible per run; store dismissal in ViewModel-backed state.
+    val isResultDismissed = model.dismissedResultRunIds.contains(model.optimizationProgress.runId)
 
     Card(
         modifier = Modifier
@@ -262,14 +302,25 @@ private fun HeroControlPanel(
                 ) { isRunning ->
                     when {
                         isRunning -> OptimizationRunningContent(model = model, onStopOptimization = onStopOptimization)
-                        model.optimizationProgress.isCompleted && !isCompletionDismissed -> {
+
+                        model.optimizationProgress.result is OptimizationResult.Completed && !isResultDismissed -> {
                             OptimizationCompletedContent(
                                 processedCount = model.optimizationProgress.processedCount,
                                 totalCount = model.optimizationProgress.totalCount,
-                                onDismiss = { isCompletionDismissed = true },
+                                onDismiss = onDismissResult,
                                 onRunAgain = onStartOptimization
                             )
                         }
+
+                        model.optimizationProgress.result is OptimizationResult.Canceled && !isResultDismissed -> {
+                            OptimizationCanceledContent(
+                                processedCount = model.optimizationProgress.processedCount,
+                                totalCount = model.optimizationProgress.totalCount,
+                                onDismiss = onDismissResult,
+                                onRunAgain = onStartOptimization
+                            )
+                        }
+
                         else -> {
                             OptimizationReadyContent(
                                 optimizationMode = model.optimizationMode,
@@ -609,6 +660,101 @@ private fun OptimizationCompletedContent(
 
         Text(
             text = "$processedCount of $totalCount apps optimized",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp, bottom = 18.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            FilledTonalButton(
+                onClick = onRunAgain,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text("Run again")
+            }
+
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.align(Alignment.CenterVertically)
+            ) {
+                Text("Dismiss")
+            }
+        }
+    }
+}
+
+/**
+ * Expressive result panel displayed when an optimization run is cancelled.
+ *
+ * Business purpose:
+ * - Distinguishes cancellation (including WorkManager/notification stop) from success.
+ * - Provides a clear next action (run again) without implying the run succeeded.
+ *
+ * @param processedCount Number of apps optimized before cancellation.
+ * @param totalCount Total apps targeted by the run.
+ * @param onDismiss Callback to hide this panel until the next run.
+ * @param onRunAgain Callback to start optimization again.
+ */
+@Composable
+private fun OptimizationCanceledContent(
+    processedCount: Int,
+    totalCount: Int,
+    onDismiss: () -> Unit,
+    onRunAgain: () -> Unit
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "canceled")
+    val iconScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.04f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, easing = EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "iconScale"
+    )
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Surface(
+            modifier = Modifier
+                .size(72.dp)
+                .scale(iconScale),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.errorContainer,
+            tonalElevation = 4.dp
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Rounded.DoNotDisturbOn,
+                    contentDescription = null,
+                    modifier = Modifier.size(38.dp),
+                    tint = MaterialTheme.colorScheme.onErrorContainer
+                )
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        Text(
+            text = "Optimization canceled",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+
+        Text(
+            text = "$processedCount of $totalCount apps optimized before stopping",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp, bottom = 18.dp)

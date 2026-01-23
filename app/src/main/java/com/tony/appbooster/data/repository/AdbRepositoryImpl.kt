@@ -3,6 +3,7 @@ package com.tony.appbooster.data.repository
 import android.content.Context
 import com.tony.appbooster.domain.client.AdbShellDataSource
 import com.tony.appbooster.domain.model.common.OptimizationProgress
+import com.tony.appbooster.domain.model.common.OptimizationResult
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.model.common.ResourceError
 import com.tony.appbooster.domain.model.settings.AppOptimizationType
@@ -114,8 +115,8 @@ class AdbRepositoryImpl @Inject constructor(
 
             _optimizationProgress.value = _optimizationProgress.value.copy(
                 isRunning = false,
-                isCompleted = false,
-                currentAppPackage = "Cancelled"
+                result = OptimizationResult.Canceled,
+                currentAppPackage = ""
             )
         }.fold(
             onSuccess = { Resource.Success(Unit) },
@@ -162,9 +163,13 @@ class AdbRepositoryImpl @Inject constructor(
                 return@runCatching
             }
 
+            // Use a monotonic-ish id (timestamp is enough here) so UI can key one-time affordances per run.
+            val runId = System.currentTimeMillis()
+
             _optimizationProgress.value = OptimizationProgress(
+                runId = runId,
                 isRunning = true,
-                isCompleted = false,
+                result = OptimizationResult.None,
                 totalCount = total,
                 processedCount = 0,
                 progress = 0f
@@ -176,11 +181,11 @@ class AdbRepositoryImpl @Inject constructor(
 
             packages.forEachIndexed { index, packageName ->
                 if (optimizationCancelRequested.get()) {
-                    addLog(" Optimization cancelled by user.")
+                    addLog("\u007f Optimization cancelled.")
                     _optimizationProgress.value = _optimizationProgress.value.copy(
                         isRunning = false,
-                        isCompleted = false,
-                        currentAppPackage = "Cancelled"
+                        result = OptimizationResult.Canceled,
+                        currentAppPackage = ""
                     )
                     return@runCatching
                 }
@@ -223,12 +228,12 @@ class AdbRepositoryImpl @Inject constructor(
                 )
             }
 
-            addLog(" Optimization complete! $total apps optimized.")
+            addLog("\u007f Optimization complete! $total apps optimized.")
 
             _optimizationProgress.value = _optimizationProgress.value.copy(
                 isRunning = false,
-                isCompleted = true,
-                currentAppPackage = "Completed",
+                result = OptimizationResult.Completed,
+                currentAppPackage = "",
                 progress = 1f
             )
         }.fold(

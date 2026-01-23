@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.lifecycle.viewModelScope
 import com.alkemy.boxapp.presentation.navigation.interfaces.NavigationManager
 import com.tony.appbooster.domain.model.common.Resource
-import com.tony.appbooster.domain.model.settings.AppOptimizationType
 import com.tony.appbooster.domain.repository.AdbRepository
 import com.tony.appbooster.domain.usecase.ConnectAdbUseCase
 import com.tony.appbooster.domain.usecase.GetAdbConnectionConfigUseCase
@@ -17,8 +16,10 @@ import com.tony.appbooster.presentation.viewmodel.base.BaseViewModel
 import com.tony.appbooster.presentation.worker.OptimizationWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -52,6 +53,7 @@ class MainViewModel @Inject constructor(
 
     override val LOG_TAG: String = "MainViewModel"
 
+    private val dismissedResultRunIds = MutableStateFlow<Set<Long>>(emptySet())
 
     init {
         observeRepository()
@@ -125,37 +127,6 @@ class MainViewModel @Inject constructor(
         )
     }
 
-    /**
-     * Starts ART optimization using a predefined compile mode on the active ADB session.
-     * The progress is streamed from the repository, while the final result and errors
-     * are handled via [launchUiStateUpdate].
-     *
-     * @param mode The compile mode to be used for optimization.
-     *
-     * @return Unit when the asynchronous operation has been launched.
-     * @throws IllegalStateException If the use case throws unexpectedly.
-     * @throws IllegalStateException If the coroutine scope is not available.
-     */
-    fun startOptimization(mode: AppOptimizationType) {
-
-        launchUiStateUpdate(
-            dataFetchBlock = { optimizeAppUseCase(mode) },
-            skipLoading = true,
-            processSuccess = {
-                uiState.value.data ?: MainUiModel()
-            }
-        )
-    }
-
-    /**
-     * Backwards-compatible API.
-     *
-     * The optimization workflow is now executed via WorkManager so it can continue in background.
-     * Prefer dispatching [MainUiEvent.OnStartOptimizationClicked] from the UI.
-     */
-    fun runAppOptimization() {
-        onStartOptimizationRequested()
-    }
 
     /**
      * Observes ADB connection, command output and optimization progress from the
@@ -172,12 +143,14 @@ class MainViewModel @Inject constructor(
             combine(
                 repository.connectionState,
                 repository.commandOutput,
-                repository.optimizationProgress
-            ) { connectionState, logs, progress ->
+                repository.optimizationProgress,
+                dismissedResultRunIds
+            ) { connectionState, logs, progress, dismissedRunIds ->
                 MainUiModel(
                     connectionState = connectionState,
                     logs = logs,
-                    optimizationProgress = progress
+                    optimizationProgress = progress,
+                    dismissedResultRunIds = dismissedRunIds
                 )
             }.collect { model ->
                 // Reuse BaseViewModel helper to update only data while preserving status.
@@ -191,28 +164,19 @@ class MainViewModel @Inject constructor(
             MainUiEvent.OnConnectClicked -> startConnectionSequence()
             MainUiEvent.OnStartOptimizationClicked -> onStartOptimizationRequested()
             MainUiEvent.OnStopOptimizationClicked -> onStopOptimizationRequested()
+            MainUiEvent.OnDismissOptimizationResultClicked -> onDismissOptimizationResultRequested()
         }
     }
 
-    private fun onStopOptimizationRequested() {
-        // Cancel WorkManager so background execution stops and notification goes away.
-        OptimizationWorker.cancel(appContext)
+    private fun onDismissOptimizationResultRequested() {
+        val runId = uiState.value.data?.optimizationProgress?.runId ?: 0L
+        if (runId == 0L) return
 
-        // Also request repository-side cancellation immediately to update UI/progress flow.
-        stopOptimization()
+        dismissedResultRunIds.update { current ->
+            if (current.contains(runId)) current else current + runId
+        }
     }
 
-    /**
-     * Validates the current shell connection before starting an optimization run.
-     *
-     * Flow:
-     * 1) Run [ConnectAdbUseCase]
-     * 2) On success → enqueue WorkManager job for optimization
-     *
-     * The WorkManager job handles the long-running optimization so it continues
-     * when the app is backgrounded. Notification progress is driven from
-     * [AdbRepository.optimizationProgress].
-     */
     private fun onStartOptimizationRequested() {
         val optimizationMode = uiState.value.data?.optimizationMode
         if (optimizationMode == null) {
@@ -229,9 +193,18 @@ class MainViewModel @Inject constructor(
             },
             invokeOnCompletion = { success ->
                 if (success) {
+                    // New run will produce a new progress.runId from the repository; no explicit reset needed.
                     OptimizationWorker.enqueue(appContext, optimizationMode)
                 }
             }
         )
+    }
+
+    private fun onStopOptimizationRequested() {
+        // Cancel WorkManager so background execution stops and notification goes away.
+        OptimizationWorker.cancel(appContext)
+
+        // Also request repository-side cancellation immediately to update UI/progress flow.
+        stopOptimization()
     }
 }

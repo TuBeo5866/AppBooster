@@ -5,12 +5,15 @@ import com.tony.appbooster.domain.model.settings.AppOptimizationType
 import com.tony.appbooster.domain.repository.AdbConnectionState
 
 /**
- * UI\-level model aggregating ADB connection and optimization data
+ * UI-level model aggregating ADB connection and optimization data
  * required by the main setup screen.
  *
  * @param connectionState Current ADB connection status.
  * @param logs Shell output lines visible in the console area.
  * @param optimizationProgress Progress of the active optimization job.
+ * @param dismissedResultRunIds Set of optimization run ids for which the user dismissed the
+ * result card (completed/canceled). Used to prevent the card from reappearing when returning
+ * to the Dashboard while the same [optimizationProgress.runId] is still the latest run.
  */
 data class MainUiModel(
     val connectionState: AdbConnectionState = AdbConnectionState.Disconnected,
@@ -19,5 +22,6 @@ data class MainUiModel(
     val optimizationMode: AppOptimizationType = AppOptimizationType.SPEED_PROFILE,
     val adbPort: Int? = null,
     val adbHost: String? = null,
-    val adbPairingCode: Int? = null
+    val adbPairingCode: Int? = null,
+    val dismissedResultRunIds: Set<Long> = emptySet()
 )
