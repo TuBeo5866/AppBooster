@@ -1,6 +1,7 @@
 package com.tony.appbooster.presentation.viewmodel.base
 
 import android.util.Log
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavDirections
@@ -9,6 +10,7 @@ import com.alkemy.boxapp.presentation.navigation.interfaces.NavigationManager
 import com.example.schedapp.presentation.viewmodel.base.UIError
 import com.example.schedapp.presentation.viewmodel.base.UIState
 import com.example.schedapp.presentation.viewmodel.base.UIStatus
+import com.tony.appbooster.R
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.model.common.ResourceError
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -63,6 +65,21 @@ abstract class BaseViewModel<UI_TYPE, UI_EVENT, UI_EFFECT>(
     }
 
     /**
+     * Resolves a string resource into a localized String.
+     *
+     * Business purpose: keeps user-visible strings centralized in resources while allowing
+     * the base ViewModel (which isn't a Composable) to build UI errors.
+     */
+    protected open fun resolveString(@StringRes id: Int, vararg args: Any): String {
+        return try {
+            AppBoosterStringProvider.get(id, *args)
+        } catch (_: Throwable) {
+            // Fallback for unit tests or edge-cases where provider isn't initialized.
+            id.toString()
+        }
+    }
+
+    /**
      * Handles various types of errors by updating the UI state with a [com.example.schedapp.presentation.viewmodel.base.UIError].
      * Subclasses can override this method to provide specific error handling logic.
      *
@@ -82,14 +99,14 @@ abstract class BaseViewModel<UI_TYPE, UI_EVENT, UI_EFFECT>(
         val errorUiState = when (errorObject) {
             is Resource.Error -> processErrorResource(errorObject.data, retryAction)
             is Throwable -> UIError(
-                title = "Unexpected Error",
-                message = errorObject.message ?: "An unknown error occurred.",
+                title = resolveString(R.string.error_unexpected_title),
+                message = errorObject.message ?: resolveString(R.string.error_unknown_fallback_message),
                 type = errorObject,
                 retryAction = retryAction
             )
             else -> UIError(
-                title = "Unknown Error",
-                message = "An unexpected error occurred.",
+                title = resolveString(R.string.error_unknown_title),
+                message = resolveString(R.string.error_unknown_message),
                 type = errorObject,
                 retryAction = retryAction
             )
@@ -122,41 +139,41 @@ abstract class BaseViewModel<UI_TYPE, UI_EVENT, UI_EFFECT>(
     ): UIError {
         return when (resource) {
             is ResourceError.LogicError -> UIError(
-                title = "Error",
-                message = resource.errorMessage
-                    ?: "An error occurred while processing your request.",
+                title = resolveString(R.string.error_generic_title),
+                message = resource.errorMessage ?: resolveString(R.string.error_generic_fallback_message),
                 type = resource,
                 retryAction = retryAction
             )
 
             is ResourceError.NetworkError -> UIError(
-                title = "Network Error",
-                message = "Please check your connection.",
+                title = resolveString(R.string.error_network_title),
+                message = resolveString(R.string.error_network_message),
                 type = resource,
                 retryAction = retryAction
             )
 
             ResourceError.UnknownError -> UIError(
-                title = "Unknown Error",
-                message = "An unexpected error occurred.",
+                title = resolveString(R.string.error_unknown_title),
+                message = resolveString(R.string.error_unknown_message),
                 type = resource,
                 retryAction = retryAction
             )
 
             ResourceError.SSLError -> UIError(
-                title = "Security Error",
-                message = "Could not establish a secure connection.",
+                title = resolveString(R.string.error_security_title),
+                message = resolveString(R.string.error_security_message),
                 type = resource,
                 retryAction = retryAction
             )
+
             null -> UIError(
-                title = "Unknown Error",
-                message = "An unexpected error occurred.",
+                title = resolveString(R.string.error_unknown_title),
+                message = resolveString(R.string.error_unknown_message),
                 retryAction = retryAction
             )
 
             is ResourceError.DatabaseError -> UIError(
-                title = "Database Error",
+                title = resolveString(R.string.error_database_title),
                 message = resource.message,
                 type = resource,
                 retryAction = retryAction

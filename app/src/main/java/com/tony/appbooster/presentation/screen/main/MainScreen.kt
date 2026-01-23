@@ -9,12 +9,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.tony.appbooster.R
 import com.tony.appbooster.presentation.navigation.Screen
 import com.tony.appbooster.presentation.screen.dashboard.DashboardScreen
 import com.tony.appbooster.presentation.screen.settings.SettingsScreen
@@ -32,9 +34,15 @@ fun MainAppScreen(viewModel: MainViewModel) {
                 val currentDestination = navBackStackEntry?.destination
 
                 items.forEach { screen ->
+                    val label = when (screen) {
+                        Screen.Dashboard -> stringResource(R.string.nav_dashboard)
+                        Screen.Settings -> stringResource(R.string.nav_settings)
+                        Screen.ShizukuSetup -> stringResource(R.string.nav_shizuku_setup)
+                    }
+
                     NavigationBarItem(
                         icon = { Icon(screen.icon, contentDescription = null) },
-                        label = { Text(screen.title) },
+                        label = { Text(label) },
                         selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
                         onClick = {
                             bottomNavController.navigate(screen.route) {

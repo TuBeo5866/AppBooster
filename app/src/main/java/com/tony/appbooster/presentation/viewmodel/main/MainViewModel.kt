@@ -3,6 +3,7 @@ package com.tony.appbooster.presentation.viewmodel.main
 import android.content.Context
 import androidx.lifecycle.viewModelScope
 import com.alkemy.boxapp.presentation.navigation.interfaces.NavigationManager
+import com.tony.appbooster.R
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.repository.AdbRepository
 import com.tony.appbooster.domain.usecase.ConnectAdbUseCase
@@ -180,7 +181,7 @@ class MainViewModel @Inject constructor(
     private fun onStartOptimizationRequested() {
         val optimizationMode = uiState.value.data?.optimizationMode
         if (optimizationMode == null) {
-            emitEffect(MainUiEffect.ShowSnackbar("Select an optimization mode first"))
+            emitEffect(MainUiEffect.ShowSnackbar(appContext.getString(R.string.error_select_optimization_mode_first)))
             return
         }
 

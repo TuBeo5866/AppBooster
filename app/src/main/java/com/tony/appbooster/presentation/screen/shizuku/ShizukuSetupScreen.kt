@@ -64,6 +64,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -72,6 +73,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
+import com.tony.appbooster.R
 import com.tony.appbooster.domain.model.shizuku.ShizukuState
 import com.tony.appbooster.presentation.ui.theme.AppBoosterTheme
 import com.tony.appbooster.presentation.viewmodel.shizuku.ShizukuSetupStep
@@ -137,7 +139,7 @@ private fun ShizukuSetupContent(
             LargeTopAppBar(
                 title = {
                     Text(
-                        text = "Setup Shizuku",
+                        text = stringResource(R.string.shizuku_setup_title),
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -154,7 +156,7 @@ private fun ShizukuSetupContent(
                         } else {
                             Icon(
                                 imageVector = Icons.Rounded.Refresh,
-                                contentDescription = "Refresh status"
+                                contentDescription = stringResource(R.string.shizuku_refresh_status_cd)
                             )
                         }
                     }
@@ -226,19 +228,19 @@ private fun ShizukuHeroSection(step: ShizukuSetupStep) {
     }
 
     val title = when (step) {
-        ShizukuSetupStep.CHECK_STATUS -> "Checking Status..."
-        ShizukuSetupStep.INSTALL_SHIZUKU -> "Install Shizuku"
-        ShizukuSetupStep.START_SERVICE -> "Start Shizuku"
-        ShizukuSetupStep.GRANT_PERMISSION -> "Grant Permission"
-        ShizukuSetupStep.READY -> "All Set!"
+        ShizukuSetupStep.CHECK_STATUS -> stringResource(R.string.shizuku_hero_checking_title)
+        ShizukuSetupStep.INSTALL_SHIZUKU -> stringResource(R.string.shizuku_hero_install_title)
+        ShizukuSetupStep.START_SERVICE -> stringResource(R.string.shizuku_hero_start_title)
+        ShizukuSetupStep.GRANT_PERMISSION -> stringResource(R.string.shizuku_hero_permission_title)
+        ShizukuSetupStep.READY -> stringResource(R.string.shizuku_hero_ready_title)
     }
 
     val subtitle = when (step) {
-        ShizukuSetupStep.CHECK_STATUS -> "Verifying Shizuku availability"
-        ShizukuSetupStep.INSTALL_SHIZUKU -> "Shizuku enables advanced optimizations"
-        ShizukuSetupStep.START_SERVICE -> "One-time setup via ADB or root"
-        ShizukuSetupStep.GRANT_PERMISSION -> "Allow AppBooster to use Shizuku"
-        ShizukuSetupStep.READY -> "Shizuku is ready for optimization"
+        ShizukuSetupStep.CHECK_STATUS -> stringResource(R.string.shizuku_hero_checking_subtitle)
+        ShizukuSetupStep.INSTALL_SHIZUKU -> stringResource(R.string.shizuku_hero_install_subtitle)
+        ShizukuSetupStep.START_SERVICE -> stringResource(R.string.shizuku_hero_start_subtitle)
+        ShizukuSetupStep.GRANT_PERMISSION -> stringResource(R.string.shizuku_hero_permission_subtitle)
+        ShizukuSetupStep.READY -> stringResource(R.string.shizuku_hero_ready_subtitle)
     }
 
     Column(
@@ -336,7 +338,7 @@ private fun SetupProgressIndicator(step: ShizukuSetupStep) {
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "Setup Progress",
+                text = stringResource(R.string.shizuku_setup_progress_label),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -480,18 +482,18 @@ private fun CheckingStatusCard(
             if (isChecking) {
                 CircularProgressIndicator()
                 Text(
-                    text = "Checking Shizuku status...",
+                    text = stringResource(R.string.shizuku_checking_status),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else if (error != null) {
                 Text(
-                    text = "Error: $error",
+                    text = stringResource(R.string.shizuku_checking_error_with_reason, error),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error
                 )
                 Button(onClick = onRetry) {
-                    Text("Retry")
+                    Text(stringResource(R.string.action_retry))
                 }
             }
         }
@@ -502,12 +504,9 @@ private fun CheckingStatusCard(
 private fun InstallShizukuCard(onInstallClicked: () -> Unit) {
     SetupStepCard(
         icon = Icons.Rounded.Download,
-        title = "Install Shizuku",
-        description = "Shizuku is a free, open-source app that allows other apps to run " +
-                "commands with elevated privileges. This enables AppBooster to perform " +
-                "advanced optimizations without root access.\n\n" +
-                "After installing, return here to continue setup.",
-        actionLabel = "Download Shizuku",
+        title = stringResource(R.string.shizuku_hero_install_title),
+        description = stringResource(R.string.shizuku_install_description),
+        actionLabel = stringResource(R.string.shizuku_download_action),
         onActionClicked = onInstallClicked
     )
 }
@@ -545,15 +544,14 @@ private fun StartServiceCard(onOpenShizukuClicked: () -> Unit) {
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Text(
-                    text = "Start Shizuku Service",
+                    text = stringResource(R.string.shizuku_start_service_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold
                 )
             }
 
             Text(
-                text = "Shizuku is installed but the service isn't running. " +
-                        "You need to start it once using one of these methods:",
+                text = stringResource(R.string.shizuku_start_service_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -576,13 +574,13 @@ private fun StartServiceCard(onOpenShizukuClicked: () -> Unit) {
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Via ADB (Recommended)",
+                            text = stringResource(R.string.shizuku_method_adb_title),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
                     Text(
-                        text = "Connect your device to a PC and run:",
+                        text = stringResource(R.string.shizuku_method_adb_instruction),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -591,7 +589,7 @@ private fun StartServiceCard(onOpenShizukuClicked: () -> Unit) {
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
-                            text = "adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh",
+                            text = stringResource(R.string.shizuku_method_adb_command),
                             modifier = Modifier.padding(12.dp),
                             style = MaterialTheme.typography.bodySmall,
                             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
@@ -618,13 +616,13 @@ private fun StartServiceCard(onOpenShizukuClicked: () -> Unit) {
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Via Root",
+                            text = stringResource(R.string.shizuku_method_root_title),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
                     Text(
-                        text = "If your device is rooted, open Shizuku and select 'Start via Root'.",
+                        text = stringResource(R.string.shizuku_method_root_description),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -635,7 +633,7 @@ private fun StartServiceCard(onOpenShizukuClicked: () -> Unit) {
                 onClick = onOpenShizukuClicked,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Open Shizuku")
+                Text(stringResource(R.string.action_open_shizuku))
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
@@ -654,10 +652,9 @@ private fun GrantPermissionCard(
 ) {
     SetupStepCard(
         icon = Icons.Rounded.Key,
-        title = "Grant Permission",
-        description = "Shizuku is running! Now AppBooster needs permission to use it. " +
-                "Tap the button below and allow access in the Shizuku dialog.",
-        actionLabel = if (isRequesting) "Requesting..." else "Grant Permission",
+        title = stringResource(R.string.shizuku_hero_permission_title),
+        description = stringResource(R.string.shizuku_grant_description),
+        actionLabel = if (isRequesting) stringResource(R.string.shizuku_grant_requesting) else stringResource(R.string.shizuku_hero_permission_title),
         onActionClicked = onGrantClicked,
         isLoading = isRequesting
     )
@@ -687,15 +684,14 @@ private fun ReadyCard() {
             )
 
             Text(
-                text = "You're All Set!",
+                text = stringResource(R.string.shizuku_ready_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onPrimaryContainer
             )
 
             Text(
-                text = "Shizuku is configured and ready. " +
-                        "AppBooster can now perform advanced optimizations.",
+                text = stringResource(R.string.shizuku_ready_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center
@@ -712,7 +708,7 @@ private fun ReadyCard() {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Redirecting...",
+                    text = stringResource(R.string.shizuku_ready_redirecting),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )

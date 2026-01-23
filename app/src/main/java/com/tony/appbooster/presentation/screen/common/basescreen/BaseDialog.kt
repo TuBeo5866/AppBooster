@@ -19,9 +19,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.tony.appbooster.R
 import com.tony.appbooster.presentation.tools.AppBasePreview
 import com.tony.appbooster.presentation.ui.theme.paddingLarge
 import com.tony.appbooster.presentation.ui.theme.paddingMedium
@@ -151,13 +153,13 @@ fun BaseDialogPreview(){
     BaseDialog(
         onDismissRequest = { },
         icon = Icons.Filled.Close,
-        title = "Connection Failed",
-        message = "Could not connect to the server. Please check your internet connection and try again.",
-        confirmButtonText = "OK",
+        title = stringResource(R.string.base_dialog_preview_title),
+        message = stringResource(R.string.base_dialog_preview_message),
+        confirmButtonText = stringResource(R.string.base_dialog_preview_confirm),
         onConfirm = {},
-        dismissButtonText = "Cancel",
+        dismissButtonText = stringResource(R.string.base_dialog_preview_cancel),
         onCancel = {},
-        retryButtonText = "Retry",
+        retryButtonText = stringResource(R.string.action_retry),
         onRetry = {  }
     )
 }

@@ -63,7 +63,7 @@ fun ErrorScreen(
         ) {
             Image(
                 imageVector = image,
-                contentDescription = "Error icon",
+                contentDescription = stringResource(R.string.error_icon_cd),
                 modifier = Modifier.size(64.dp),
                 colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.error)
             )

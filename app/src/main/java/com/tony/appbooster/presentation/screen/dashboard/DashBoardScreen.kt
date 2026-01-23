@@ -84,12 +84,14 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.tony.appbooster.R
 import com.tony.appbooster.domain.model.common.OptimizationResult
 import com.tony.appbooster.domain.model.settings.AppOptimizationType
 import com.tony.appbooster.presentation.permission.NotificationPermissionManager
@@ -185,7 +187,7 @@ private fun DashboardContent(
             LargeTopAppBar(
                 title = {
                     Text(
-                        text = "OptiDroid",
+                        text = stringResource(R.string.dashboard_title),
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold
                         )
@@ -392,14 +394,14 @@ private fun OptimizationRunningContent(
         Spacer(Modifier.height(20.dp))
 
         Text(
-            text = "Optimizing Apps",
+            text = stringResource(R.string.dashboard_optimizing_title),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
         )
 
         Text(
-            text = "Please wait while we enhance performance",
+            text = stringResource(R.string.dashboard_optimizing_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
@@ -434,12 +436,12 @@ private fun OptimizationRunningContent(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Current app",
+                        text = stringResource(R.string.dashboard_current_app_label),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = progress.currentAppPackage.ifEmpty { "Preparing..." },
+                        text = progress.currentAppPackage.ifEmpty { stringResource(R.string.dashboard_preparing) },
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         maxLines = 1,
@@ -452,7 +454,11 @@ private fun OptimizationRunningContent(
                     color = MaterialTheme.colorScheme.primary
                 ) {
                     Text(
-                        text = "${progress.processedCount}/${progress.totalCount}",
+                        text = stringResource(
+                            R.string.dashboard_progress_fraction,
+                            progress.processedCount,
+                            progress.totalCount
+                        ),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onPrimary,
@@ -485,19 +491,19 @@ private fun OptimizationRunningContent(
             ) {
                 Icon(
                     imageVector = Icons.Rounded.StopCircle,
-                    contentDescription = "Stop optimization",
+                    contentDescription = stringResource(R.string.dashboard_stop_optimization_cd),
                     tint = MaterialTheme.colorScheme.onErrorContainer
                 )
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Stop",
+                        text = stringResource(R.string.action_stop),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
                     Text(
-                        text = "Cancels after the current app finishes",
+                        text = stringResource(R.string.dashboard_stop_description),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.85f)
                     )
@@ -527,13 +533,13 @@ private fun OptimizationReadyContent(
     // Dynamic content based on optimization mode
     val (title, description, icon) = when (optimizationMode) {
         AppOptimizationType.SPEED_PROFILE -> Triple(
-            "Speed Profile",
-            "Optimize apps based on usage patterns",
+            stringResource(R.string.dashboard_ready_speed_profile_title),
+            stringResource(R.string.dashboard_ready_speed_profile_description),
             Icons.Rounded.Speed
         )
         AppOptimizationType.FULL_OPTIMIZATION -> Triple(
-            "Full Optimization",
-            "Maximum performance compilation",
+            stringResource(R.string.dashboard_ready_full_optimization_title),
+            stringResource(R.string.dashboard_ready_full_optimization_description),
             Icons.Rounded.RocketLaunch
         )
     }
@@ -593,7 +599,7 @@ private fun OptimizationReadyContent(
                 )
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    text = "Start",
+                    text = stringResource(R.string.action_start),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -653,13 +659,17 @@ private fun OptimizationCompletedContent(
         Spacer(Modifier.height(16.dp))
 
         Text(
-            text = "Optimization finished",
+            text = stringResource(R.string.dashboard_result_completed_title),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
 
         Text(
-            text = "$processedCount of $totalCount apps optimized",
+            text = stringResource(
+                R.string.dashboard_result_completed_count,
+                processedCount,
+                totalCount
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp, bottom = 18.dp)
@@ -680,14 +690,14 @@ private fun OptimizationCompletedContent(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(8.dp))
-                Text("Run again")
+                Text(stringResource(R.string.action_run_again))
             }
 
             TextButton(
                 onClick = onDismiss,
                 modifier = Modifier.align(Alignment.CenterVertically)
             ) {
-                Text("Dismiss")
+                Text(stringResource(R.string.action_dismiss))
             }
         }
     }
@@ -748,13 +758,17 @@ private fun OptimizationCanceledContent(
         Spacer(Modifier.height(16.dp))
 
         Text(
-            text = "Optimization canceled",
+            text = stringResource(R.string.dashboard_result_canceled_title),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold
         )
 
         Text(
-            text = "$processedCount of $totalCount apps optimized before stopping",
+            text = stringResource(
+                R.string.dashboard_result_canceled_count,
+                processedCount,
+                totalCount
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 4.dp, bottom = 18.dp)
@@ -775,14 +789,14 @@ private fun OptimizationCanceledContent(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(8.dp))
-                Text("Run again")
+                Text(stringResource(R.string.action_run_again))
             }
 
             TextButton(
                 onClick = onDismiss,
                 modifier = Modifier.align(Alignment.CenterVertically)
             ) {
-                Text("Dismiss")
+                Text(stringResource(R.string.action_dismiss))
             }
         }
     }
@@ -812,7 +826,7 @@ private fun TerminalSection(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "Terminal Output",
+                text = stringResource(R.string.dashboard_terminal_section_title),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -851,12 +865,12 @@ private fun TerminalSection(
                             tint = Color(0xFF8B949E)
                         )
                         Text(
-                            text = "No output yet",
+                            text = stringResource(R.string.dashboard_terminal_empty_title),
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color(0xFF8B949E)
                         )
                         Text(
-                            text = "Start optimization to see terminal output",
+                            text = stringResource(R.string.dashboard_terminal_empty_subtitle),
                             style = MaterialTheme.typography.bodySmall,
                             color = Color(0xFF6E7681)
                         )

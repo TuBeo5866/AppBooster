@@ -5,6 +5,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.tony.appbooster.R
 
 /**
  * Explains why notification permission is requested.
@@ -24,24 +26,24 @@ fun NotificationPermissionRationaleDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Enable notifications?",
+                text = stringResource(R.string.notification_permission_rationale_title),
                 style = MaterialTheme.typography.titleLarge
             )
         },
         text = {
             Text(
-                text = "OptiDroid uses a foreground notification to keep optimization running in the background and to show a Stop button.\n\nWe only post notifications while optimization is running.",
+                text = stringResource(R.string.notification_permission_rationale_message),
                 style = MaterialTheme.typography.bodyMedium
             )
         },
         confirmButton = {
             TextButton(onClick = onConfirm) {
-                Text("Allow")
+                Text(stringResource(R.string.action_allow))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Not now")
+                Text(stringResource(R.string.action_not_now))
             }
         }
     )

@@ -57,6 +57,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -65,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.schedapp.presentation.viewmodel.base.UIState
 import com.example.schedapp.presentation.viewmodel.base.UIStatus
+import com.tony.appbooster.R
 import com.tony.appbooster.domain.model.settings.AppOptimizationType
 import com.tony.appbooster.domain.model.shizuku.ShizukuState
 import com.tony.appbooster.presentation.screen.common.basescreen.AppBaseScreen
@@ -121,7 +123,7 @@ fun SettingsScreenContent(
             LargeTopAppBar(
                 title = {
                     Text(
-                        text = "Settings",
+                        text = stringResource(R.string.settings_top_bar_title),
                         style = MaterialTheme.typography.headlineLarge.copy(
                             fontWeight = FontWeight.Bold
                         )
@@ -146,8 +148,8 @@ fun SettingsScreenContent(
             // Optimization Mode Section
             item {
                 SettingsSection(
-                    title = "Optimization Mode",
-                    subtitle = "Choose how apps are optimized"
+                    title = stringResource(R.string.settings_section_optimization_title),
+                    subtitle = stringResource(R.string.settings_section_optimization_subtitle)
                 ) {
                     OptimizationTypeSelector(
                         selectedType = data.appOptimizationType,
@@ -159,8 +161,8 @@ fun SettingsScreenContent(
             // Shizuku Status Section
             item {
                 SettingsSection(
-                    title = "Shizuku Status",
-                    subtitle = "Privileged command execution service"
+                    title = stringResource(R.string.settings_section_shizuku_title),
+                    subtitle = stringResource(R.string.settings_section_shizuku_subtitle)
                 ) {
                     ShizukuStatusCard(shizukuState = data.shizukuState)
                 }
@@ -169,8 +171,8 @@ fun SettingsScreenContent(
             // About Section
             item {
                 SettingsSection(
-                    title = "About",
-                    subtitle = "App information"
+                    title = stringResource(R.string.settings_section_about_title),
+                    subtitle = stringResource(R.string.settings_section_about_subtitle)
                 ) {
                     AboutCard(
                         versionName = data.appVersionName,
@@ -222,16 +224,16 @@ private fun OptimizationTypeSelector(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         OptimizationTypeCard(
-            title = "Speed Profile",
-            description = "Optimizes based on usage patterns. Faster install, balanced performance.",
+            title = stringResource(R.string.settings_opt_speed_title),
+            description = stringResource(R.string.settings_opt_speed_description),
             icon = Icons.Outlined.Speed,
             isSelected = selectedType == AppOptimizationType.SPEED_PROFILE,
             onClick = { onTypeSelected(AppOptimizationType.SPEED_PROFILE) }
         )
 
         OptimizationTypeCard(
-            title = "Full Optimization",
-            description = "Maximum performance. Longer compile time, best runtime speed.",
+            title = stringResource(R.string.settings_opt_full_title),
+            description = stringResource(R.string.settings_opt_full_description),
             icon = Icons.Outlined.Bolt,
             isSelected = selectedType == AppOptimizationType.FULL_OPTIMIZATION,
             onClick = { onTypeSelected(AppOptimizationType.FULL_OPTIMIZATION) }
@@ -298,6 +300,8 @@ private fun OptimizationTypeCard(
         label = "elevation"
     )
 
+    val selectionContentDescription = stringResource(R.string.settings_optimization_mode_cd, title)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -307,7 +311,7 @@ private fun OptimizationTypeCard(
                 indication = null,
                 onClick = onClick
             )
-            .semantics { contentDescription = "$title optimization mode" },
+            .semantics { contentDescription = selectionContentDescription },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = containerColor),
         border = BorderStroke(
@@ -379,7 +383,7 @@ private fun OptimizationTypeCard(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Rounded.Check,
-                                contentDescription = "Selected",
+                                contentDescription = stringResource(R.string.settings_selected_cd),
                                 modifier = Modifier.size(18.dp),
                                 tint = MaterialTheme.colorScheme.onPrimary
                             )
@@ -403,35 +407,35 @@ private fun ShizukuStatusCard(shizukuState: ShizukuState) {
             icon = Icons.Rounded.CheckCircle,
             iconColor = MaterialTheme.colorScheme.primary,
             containerColor = MaterialTheme.colorScheme.primaryContainer,
-            title = "Ready",
-            description = "Shizuku is authorized and ready to execute commands"
+            title = stringResource(R.string.settings_status_ready_title),
+            description = stringResource(R.string.settings_status_ready_description)
         )
         ShizukuState.PermissionRequired -> StatusInfo(
             icon = Icons.Rounded.Warning,
             iconColor = MaterialTheme.colorScheme.tertiary,
             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            title = "Permission Required",
-            description = "Please grant Shizuku permission to this app"
+            title = stringResource(R.string.settings_status_permission_required_title),
+            description = stringResource(R.string.settings_status_permission_required_description)
         )
         ShizukuState.NotRunning -> StatusInfo(
             icon = Icons.Rounded.Warning,
             iconColor = MaterialTheme.colorScheme.error,
             containerColor = MaterialTheme.colorScheme.errorContainer,
-            title = "Not Running",
-            description = "Start Shizuku service from the Shizuku app"
+            title = stringResource(R.string.settings_status_not_running_title),
+            description = stringResource(R.string.settings_status_not_running_description)
         )
         ShizukuState.NotInstalled -> StatusInfo(
             icon = Icons.Rounded.Error,
             iconColor = MaterialTheme.colorScheme.error,
             containerColor = MaterialTheme.colorScheme.errorContainer,
-            title = "Not Installed",
-            description = "Install Shizuku from Google Play or GitHub"
+            title = stringResource(R.string.settings_status_not_installed_title),
+            description = stringResource(R.string.settings_status_not_installed_description)
         )
         is ShizukuState.Error -> StatusInfo(
             icon = Icons.Rounded.Error,
             iconColor = MaterialTheme.colorScheme.error,
             containerColor = MaterialTheme.colorScheme.errorContainer,
-            title = "Error",
+            title = stringResource(R.string.error_generic_title),
             description = shizukuState.message
         )
     }
@@ -478,7 +482,7 @@ private fun ShizukuStatusCard(shizukuState: ShizukuState) {
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "Shizuku",
+                        text = stringResource(R.string.settings_shizuku_label),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -551,7 +555,7 @@ private fun AboutCard(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "OptiDroid",
+                    text = stringResource(R.string.about_app_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -561,7 +565,7 @@ private fun AboutCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = versionName.ifEmpty { "1.0.0" },
+                        text = versionName.ifEmpty { stringResource(R.string.about_version_fallback) },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

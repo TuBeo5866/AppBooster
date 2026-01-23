@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AppBooster</string>
+    <string name="ok">ok</string>
+
+    <string name="settings_title">Impostazioni</string>
+    <string name="settings_compilation_mode_content_description">Impostazione modalità di compilazione</string>
+    <string name="settings_compilation_mode_title">Modalità di compilazione</string>
+    <string name="settings_optimization_speed_profile">speed-profile</string>
+    <string name="settings_optimization_full_optimization">full-optimization</string>
+    <string name="settings_compilation_mode_current_value">Attualmente impostato su "%1$s"</string>
+    <string name="settings_compilation_mode_icon_description">Icona impostazioni modalità di compilazione</string>
+    <string name="settings_app_info_content_description">Informazioni applicazione</string>
+    <string name="settings_app_info_icon_description">Icona informazioni app</string>
+    <string name="settings_app_info_title">Informazioni app</string>
+    <string name="settings_app_version_with_channel">Versione %1$s (%2$s)</string>
+    <string name="settings_app_version">Versione %1$s</string>
+
+    <string name="action_allow">Consenti</string>
+    <string name="action_not_now">Non ora</string>
+    <string name="action_retry">Riprova</string>
+    <string name="action_open_shizuku">Apri Shizuku</string>
+    <string name="action_start">Avvia</string>
+    <string name="action_stop">Interrompi</string>
+    <string name="action_run_again">Esegui di nuovo</string>
+    <string name="action_dismiss">Chiudi</string>
+
+    <string name="notification_permission_rationale_title">Abilitare le notifiche?</string>
+    <string name="notification_permission_rationale_message">OptiDroid usa una notifica in primo piano per mantenere l’ottimizzazione in esecuzione in background e mostrare un pulsante di interruzione.\n\nPubblicheremo notifiche solo mentre l’ottimizzazione è in corso.</string>
+
+    <string name="dashboard_title">OptiDroid</string>
+    <string name="dashboard_optimizing_title">Ottimizzazione app</string>
+    <string name="dashboard_optimizing_subtitle">Attendi mentre miglioriamo le prestazioni</string>
+    <string name="dashboard_current_app_label">App corrente</string>
+    <string name="dashboard_preparing">Preparazione...</string>
+    <string name="dashboard_progress_fraction">%1$d/%2$d</string>
+    <string name="dashboard_stop_optimization_cd">Interrompi ottimizzazione</string>
+    <string name="dashboard_stop_description">Annulla dopo il completamento dell’app corrente</string>
+    <string name="dashboard_result_completed_title">Ottimizzazione completata</string>
+    <string name="dashboard_result_canceled_title">Ottimizzazione annullata</string>
+    <string name="dashboard_result_completed_count">%1$d di %2$d app ottimizzate</string>
+    <string name="dashboard_result_canceled_count">%1$d di %2$d app ottimizzate prima dell’interruzione</string>
+    <string name="dashboard_terminal_section_title">Output terminale</string>
+    <string name="dashboard_terminal_empty_title">Nessun output</string>
+    <string name="dashboard_terminal_empty_subtitle">Avvia l’ottimizzazione per vedere l’output del terminale</string>
+
+    <string name="shizuku_setup_title">Configura Shizuku</string>
+    <string name="shizuku_refresh_status_cd">Aggiorna stato</string>
+
+    <string name="shizuku_hero_checking_title">Verifica stato...</string>
+    <string name="shizuku_hero_install_title">Installa Shizuku</string>
+    <string name="shizuku_hero_start_title">Avvia Shizuku</string>
+    <string name="shizuku_hero_permission_title">Concedi permesso</string>
+    <string name="shizuku_hero_ready_title">Tutto pronto!</string>
+
+    <string name="shizuku_hero_checking_subtitle">Verifica della disponibilità di Shizuku</string>
+    <string name="shizuku_hero_install_subtitle">Shizuku abilita ottimizzazioni avanzate</string>
+    <string name="shizuku_hero_start_subtitle">Configurazione una tantum via ADB o root</string>
+    <string name="shizuku_hero_permission_subtitle">Consenti ad AppBooster di usare Shizuku</string>
+    <string name="shizuku_hero_ready_subtitle">Shizuku è pronto per l’ottimizzazione</string>
+
+    <string name="shizuku_setup_progress_label">Avanzamento configurazione</string>
+    <string name="shizuku_checking_status">Verifica dello stato di Shizuku...</string>
+    <string name="shizuku_checking_error_with_reason">Errore: %1$s</string>
+
+    <string name="shizuku_install_description">Shizuku è un’app gratuita e open source che permette ad altre app di eseguire comandi con privilegi elevati. Questo consente ad AppBooster di effettuare ottimizzazioni avanzate senza accesso root.\n\nDopo l’installazione, torna qui per continuare la configurazione.</string>
+    <string name="shizuku_download_action">Scarica Shizuku</string>
+
+    <string name="shizuku_start_service_title">Avvia il servizio Shizuku</string>
+    <string name="shizuku_start_service_description">Shizuku è installato, ma il servizio non è in esecuzione. Devi avviarlo una volta usando uno di questi metodi:</string>
+
+    <string name="shizuku_method_adb_title">Tramite ADB (consigliato)</string>
+    <string name="shizuku_method_adb_instruction">Collega il dispositivo a un PC ed esegui:</string>
+    <string name="shizuku_method_adb_command">adb shell sh /sdcard/Android/data/moe.shizuku.privileged.api/start.sh</string>
+
+    <string name="shizuku_method_root_title">Tramite root</string>
+    <string name="shizuku_method_root_description">Se il dispositivo è rootato, apri Shizuku e seleziona "Start via Root".</string>
+
+    <string name="shizuku_grant_description">Shizuku è in esecuzione! Ora AppBooster ha bisogno del permesso per usarlo. Tocca il pulsante qui sotto e consenti l’accesso nella finestra di dialogo di Shizuku.</string>
+    <string name="shizuku_grant_requesting">Richiesta in corso...</string>
+
+    <string name="shizuku_ready_title">Tutto pronto!</string>
+    <string name="shizuku_ready_description">Shizuku è configurato e pronto. AppBooster può ora eseguire ottimizzazioni avanzate.</string>
+    <string name="shizuku_ready_redirecting">Reindirizzamento...</string>
+
+    <string name="settings_top_bar_title">Impostazioni</string>
+    <string name="settings_section_optimization_title">Modalità di ottimizzazione</string>
+    <string name="settings_section_optimization_subtitle">Scegli come ottimizzare le app</string>
+    <string name="settings_section_shizuku_title">Stato Shizuku</string>
+    <string name="settings_section_shizuku_subtitle">Servizio per l’esecuzione di comandi con privilegi</string>
+    <string name="settings_section_about_title">Informazioni</string>
+    <string name="settings_section_about_subtitle">Dettagli dell’app</string>
+
+    <string name="settings_opt_speed_title">Speed Profile</string>
+    <string name="settings_opt_speed_description">Ottimizza in base ai pattern d’uso. Installazione più rapida, prestazioni bilanciate.</string>
+    <string name="settings_opt_full_title">Ottimizzazione completa</string>
+    <string name="settings_opt_full_description">Massime prestazioni. Compilazione più lunga, migliore velocità in esecuzione.</string>
+
+    <string name="settings_optimization_mode_cd">Modalità di ottimizzazione: %1$s</string>
+    <string name="settings_selected_cd">Selezionato</string>
+
+    <string name="settings_shizuku_label">Shizuku</string>
+
+    <string name="settings_status_ready_title">Pronto</string>
+    <string name="settings_status_ready_description">Shizuku è autorizzato e pronto a eseguire comandi</string>
+    <string name="settings_status_permission_required_title">Permesso richiesto</string>
+    <string name="settings_status_permission_required_description">Concedi il permesso di Shizuku a questa app</string>
+    <string name="settings_status_not_running_title">Non in esecuzione</string>
+    <string name="settings_status_not_running_description">Avvia il servizio Shizuku dall’app Shizuku</string>
+    <string name="settings_status_not_installed_title">Non installato</string>
+    <string name="settings_status_not_installed_description">Installa Shizuku da Google Play o GitHub</string>
+
+    <string name="error_icon_cd">Icona errore</string>
+
+    <string name="error_unexpected_title">Errore imprevisto</string>
+    <string name="error_unknown_title">Errore sconosciuto</string>
+    <string name="error_unknown_message">Si è verificato un errore imprevisto.</string>
+    <string name="error_unknown_fallback_message">Si è verificato un errore sconosciuto.</string>
+
+    <string name="error_generic_title">Errore</string>
+    <string name="error_generic_fallback_message">Si è verificato un errore durante l’elaborazione della richiesta.</string>
+
+    <string name="error_network_title">Errore di rete</string>
+    <string name="error_network_message">Controlla la connessione.</string>
+
+    <string name="error_security_title">Errore di sicurezza</string>
+    <string name="error_security_message">Impossibile stabilire una connessione sicura.</string>
+
+    <string name="error_database_title">Errore database</string>
+    <string name="error_select_optimization_mode_first">Seleziona prima una modalità di ottimizzazione</string>
+
+    <string name="dashboard_ready_speed_profile_title">Speed Profile</string>
+    <string name="dashboard_ready_speed_profile_description">Ottimizza le app in base ai pattern d’uso</string>
+    <string name="dashboard_ready_full_optimization_title">Ottimizzazione completa</string>
+    <string name="dashboard_ready_full_optimization_description">Compilazione per prestazioni massime</string>
+
+    <string name="about_app_title">OptiDroid</string>
+    <string name="about_version_fallback">1.0.0</string>
+
+    <string name="base_dialog_preview_title">Connessione non riuscita</string>
+    <string name="base_dialog_preview_message">Impossibile connettersi al server. Controlla la connessione Internet e riprova.</string>
+    <string name="base_dialog_preview_confirm">OK</string>
+    <string name="base_dialog_preview_cancel">Annulla</string>
+
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_settings">Impostazioni</string>
+    <string name="nav_shizuku_setup">Shizuku</string>
+</resources>
