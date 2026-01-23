@@ -16,6 +16,23 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /**
+ * User intents originating from the Settings screen.
+ */
+sealed interface SettingsUiEvent {
+    /**
+     * Requests persisting a new optimization type.
+     *
+     * @property type New optimization mode selected by the user.
+     */
+    data class OnOptimizationTypeSelected(val type: AppOptimizationType) : SettingsUiEvent
+}
+
+/**
+ * One-shot UI effects for Settings.
+ */
+sealed interface SettingsUiEffect
+
+/**
  * ViewModel coordinating Settings behavior by combining optimization
  * preferences, Shizuku status and static app metadata into
  * a single UI state consumed by the Settings screen.
@@ -34,7 +51,7 @@ class SettingsViewModel @Inject constructor(
     private val setAppOptimizationTypeUseCase: SetAppOptimizationTypeUseCase,
     private val getAppInfoUseCase: GetAppInfoUseCase,
     private val observeShizukuStateUseCase: ObserveShizukuStateUseCase
-) : BaseViewModel<SettingsUiState>(navigationManager) {
+) : BaseViewModel<SettingsUiState, SettingsUiEvent, SettingsUiEffect>(navigationManager) {
 
     override val LOG_TAG: String = "SettingsViewModel"
 
@@ -116,14 +133,22 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    override fun handleEvent(event: SettingsUiEvent) {
+        when (event) {
+            is SettingsUiEvent.OnOptimizationTypeSelected -> persistOptimizationType(event.type)
+        }
+    }
+
     /**
-     * Persists the new optimization type and updates the current UI state
-     * optimistically while relying on the observer flow to confirm changes.
+     * Backwards-compatible entrypoint used by the current Settings screen.
      *
-     * @param type The optimization mode selected in the Settings screen.
-     * @return Unit, success or error is communicated via [uiState].
+     * Once the UI is migrated, it should call [onEvent] directly instead.
      */
     fun onOptimizationTypeSelected(type: AppOptimizationType) {
+        onEvent(SettingsUiEvent.OnOptimizationTypeSelected(type))
+    }
+
+    private fun persistOptimizationType(type: AppOptimizationType) {
         executeAsync {
             when (val result = setAppOptimizationTypeUseCase(type)) {
                 is Resource.Success -> {
@@ -140,7 +165,6 @@ class SettingsViewModel @Inject constructor(
             }
         }
     }
-
 
     /**
      * Retrieves the current [SettingsUiState] from the base UI container,

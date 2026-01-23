@@ -59,6 +59,8 @@ import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -91,18 +93,31 @@ import androidx.compose.ui.unit.sp
 import com.tony.appbooster.domain.model.settings.AppOptimizationType
 import com.tony.appbooster.domain.repository.AdbConnectionState
 import com.tony.appbooster.presentation.screen.common.basescreen.AppBaseScreen
+import com.tony.appbooster.presentation.viewmodel.main.MainUiEffect
+import com.tony.appbooster.presentation.viewmodel.main.MainUiEvent
 import com.tony.appbooster.presentation.viewmodel.main.MainUiModel
 import com.tony.appbooster.presentation.viewmodel.main.MainViewModel
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun DashboardScreen(viewModel: MainViewModel) {
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(viewModel) {
+        viewModel.uiEffect.collectLatest { effect ->
+            when (effect) {
+                is MainUiEffect.ShowSnackbar -> snackbarHostState.showSnackbar(effect.message)
+            }
+        }
+    }
 
     AppBaseScreen(uiState = uiState) { model ->
         DashboardContent(
             model = model,
-            onStartOptimization = viewModel::runAppOptimization,
-            onStopOptimization = viewModel::stopOptimization
+            onStartOptimization = { viewModel.onEvent(MainUiEvent.OnStartOptimizationClicked) },
+            onStopOptimization = { viewModel.onEvent(MainUiEvent.OnStopOptimizationClicked) },
+            snackbarHostState = snackbarHostState
         )
     }
 }
@@ -112,7 +127,8 @@ fun DashboardScreen(viewModel: MainViewModel) {
 private fun DashboardContent(
     model: MainUiModel,
     onStartOptimization: () -> Unit,
-    onStopOptimization: () -> Unit
+    onStopOptimization: () -> Unit,
+    snackbarHostState: SnackbarHostState
 ) {
     val listState = rememberLazyListState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
@@ -136,7 +152,7 @@ private fun DashboardContent(
                     )
                 },
                 actions = {
-                    ConnectionStatusBadge(model.connectionState)
+                    // Intentionally empty: connection chip removed (Shizuku health is validated on-demand).
                 },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.largeTopAppBarColors(
@@ -145,6 +161,7 @@ private fun DashboardContent(
                 )
             )
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.surface
     ) { padding ->
         Column(
@@ -154,62 +171,6 @@ private fun DashboardContent(
         ) {
             HeroControlPanel(model, onStartOptimization, onStopOptimization)
             TerminalSection(model.logs, listState)
-        }
-    }
-}
-
-/**
- * Animated connection status badge with expressive visual feedback.
- */
-@Composable
-private fun ConnectionStatusBadge(connectionState: AdbConnectionState) {
-    AnimatedVisibility(
-        visible = connectionState is AdbConnectionState.Connected,
-        enter = fadeIn(tween(300)) + scaleIn(
-            initialScale = 0.8f,
-            animationSpec = spring(stiffness = Spring.StiffnessMedium)
-        ),
-        exit = fadeOut(tween(200)) + scaleOut(targetScale = 0.8f)
-    ) {
-        Surface(
-            modifier = Modifier.padding(end = 16.dp),
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.primaryContainer,
-            tonalElevation = 2.dp
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                // Pulsing indicator dot
-                val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-                val pulseAlpha by infiniteTransition.animateFloat(
-                    initialValue = 0.6f,
-                    targetValue = 1f,
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(1000, easing = EaseInOutCubic),
-                        repeatMode = RepeatMode.Reverse
-                    ),
-                    label = "pulseAlpha"
-                )
-
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .alpha(pulseAlpha)
-                        .background(
-                            color = MaterialTheme.colorScheme.primary,
-                            shape = CircleShape
-                        )
-                )
-
-                Text(
-                    text = "Connected",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
         }
     }
 }

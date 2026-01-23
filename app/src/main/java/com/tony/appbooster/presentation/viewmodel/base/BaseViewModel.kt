@@ -12,25 +12,43 @@ import com.example.schedapp.presentation.viewmodel.base.UIStatus
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.model.common.ResourceError
 import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
  * Base ViewModel class providing common functionality for UI state management,
- * error handling, session observation, and navigation.
+ * error handling, session observation, navigation and a UDF-style event pipeline.
  *
- * @param UI_TYPE The type of the data held in the UI state.
- * @property navigationManager The manager responsible for dispatching navigation commands.
+ * This base supports two streams:
+ * - A persistent [uiState] stream for rendering.
+ * - A one-shot [uiEffect] stream for transient actions (snackbars, navigation hints, etc.).
+ *
+ * @param UI_TYPE Type of the immutable UI model held in [uiState].
+ * @param UI_EVENT Type of the UI intent/event dispatched by the UI layer.
+ * @param UI_EFFECT Type of one-shot effects emitted towards the UI layer.
+ * @property navigationManager Manager responsible for dispatching navigation commands.
  */
-abstract class BaseViewModel<UI_TYPE>(
+abstract class BaseViewModel<UI_TYPE, UI_EVENT, UI_EFFECT>(
     private val navigationManager: NavigationManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UIState<UI_TYPE>())
     val uiState: StateFlow<UIState<UI_TYPE>> = _uiState.asStateFlow()
+
+    private val _uiEffect = MutableSharedFlow<UI_EFFECT>(extraBufferCapacity = 1)
+
+    /**
+     * Hot stream of transient effects.
+     *
+     * Effects are one-shot by design: the UI should collect and react once.
+     */
+    val uiEffect: SharedFlow<UI_EFFECT> = _uiEffect.asSharedFlow()
 
     open val LOG_TAG: String = this::class.java.simpleName
     open val logErrorMessage = "The ViewModel caught an error"
@@ -307,5 +325,40 @@ abstract class BaseViewModel<UI_TYPE>(
      */
     protected fun setLoadingState() {
         _uiState.update { it.copy(status = UIStatus.LOADING, error = null, showErrorDialog = false) }
+    }
+
+    /**
+     * Single entrypoint for all user intents emitted by the UI.
+     *
+     * This enforces Unidirectional Data Flow (UDF): UI emits [UI_EVENT] → ViewModel processes
+     * it → state/effects update → UI renders/reacts.
+     *
+     * @param event User intent coming from the presentation layer.
+     */
+    fun onEvent(event: UI_EVENT) {
+        handleEvent(event)
+    }
+
+    /**
+     * Processes a UI intent.
+     *
+     * Implementations should be side-effect free where possible and coordinate work via
+     * use cases/repositories, updating [uiState] and emitting [uiEffect] as needed.
+     *
+     * @param event User intent coming from the UI.
+     */
+    protected abstract fun handleEvent(event: UI_EVENT)
+
+    /**
+     * Emits a transient effect towards the UI.
+     *
+     * This uses a buffered [MutableSharedFlow] to avoid suspending the caller.
+     * Callers should prefer emitting effects for snackbars/toasts/navigation prompts,
+     * not for persistent rendering state.
+     *
+     * @param effect One-shot UI effect.
+     */
+    protected fun emitEffect(effect: UI_EFFECT) {
+        _uiEffect.tryEmit(effect)
     }
 }

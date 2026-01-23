@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.alkemy.boxapp.presentation.navigation.interfaces.NavigationManager
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.model.settings.AppOptimizationType
+import com.tony.appbooster.domain.repository.AdbConnectionState
 import com.tony.appbooster.domain.repository.AdbRepository
 import com.tony.appbooster.domain.usecase.ConnectAdbUseCase
 import com.tony.appbooster.domain.usecase.GetAdbConnectionConfigUseCase
@@ -44,7 +45,7 @@ class MainViewModel @Inject constructor(
     private val getAdbConnectionConfigUseCase: GetAdbConnectionConfigUseCase,
     private val repository: AdbRepository,
     navigationManager: NavigationManager
-) : BaseViewModel<MainUiModel>(navigationManager) {
+) : BaseViewModel<MainUiModel, MainUiEvent, MainUiEffect>(navigationManager) {
 
     override val LOG_TAG: String = "MainViewModel"
 
@@ -180,6 +181,37 @@ class MainViewModel @Inject constructor(
             }.collect { model ->
                 // Reuse BaseViewModel helper to update only data while preserving status.
                 updateUiData(model)
+            }
+        }
+    }
+
+    override fun handleEvent(event: MainUiEvent) {
+        when (event) {
+            MainUiEvent.OnConnectClicked -> startConnectionSequence()
+            MainUiEvent.OnStartOptimizationClicked -> onStartOptimizationRequested()
+            MainUiEvent.OnStopOptimizationClicked -> stopOptimization()
+        }
+    }
+
+    /**
+     * Validates the current shell connection before starting an optimization run.
+     *
+     * We do **not** rely on the current [MainUiModel.connectionState] snapshot here because
+     * it can be stale at the time the user clicks the button (race between UI and flow
+     * collector). Instead we perform an explicit health check via [ConnectAdbUseCase].
+     */
+    private fun onStartOptimizationRequested() {
+        executeAsync {
+            when (val connectionResult = connectAdbUseCase()) {
+                is Resource.Success -> {
+                    runAppOptimization()
+                }
+
+                is Resource.Error -> {
+                    // Provide quick user feedback while BaseViewModel error handling remains available.
+                    emitEffect(MainUiEffect.ShowSnackbar("Connect to ADB first to start optimization"))
+                    handleError(connectionResult)
+                }
             }
         }
     }

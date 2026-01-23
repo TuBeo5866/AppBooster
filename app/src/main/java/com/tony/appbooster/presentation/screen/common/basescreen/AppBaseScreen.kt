@@ -48,15 +48,15 @@ fun <T> AppBaseScreen(
     )
 
     AnimatedContent(
-        targetState = uiState,
+        targetState = uiState.status,
         label = "AppBaseScreenAnimation",
         transitionSpec = { fadeIn() togetherWith fadeOut() }
-    ) { targetState ->
+    ) { status ->
         Box {
-            when (targetState.status) {
+            when (status) {
                 UIStatus.LOADING -> {
                     if (loadingType != BaseLoadingType.DEFAULT) {
-                        targetState.data?.let { content(it) }
+                        uiState.data?.let { content(it) }
                     }
                     if (loadingScreen != null) {
                         loadingScreen()
@@ -69,30 +69,31 @@ fun <T> AppBaseScreen(
                                 )
                             )
 
-                            BaseLoadingType.NONE -> { /* No loading indicator */
+                            BaseLoadingType.NONE -> {
+                                /* No loading indicator */
                             }
                         }
                     }
                 }
 
                 UIStatus.SUCCESS, UIStatus.IDLE -> {
-                    targetState.data?.let { content(it) }
+                    uiState.data?.let { content(it) }
                 }
 
                 UIStatus.ERROR -> {
-                    targetState.data?.let { content(it) }
+                    uiState.data?.let { content(it) }
                     if (errorScreen != null) {
                         errorScreen()
-                    } else if (targetState.showErrorDialog && targetState.error != null) {
+                    } else if (uiState.showErrorDialog && uiState.error != null) {
                         BaseDialog(
-                            title = targetState.error.title,
-                            message = targetState.error.message,
+                            title = uiState.error.title,
+                            message = uiState.error.message,
                             confirmButtonText = errorDialogConfig.confirmButtonText
                                 ?: stringResource(R.string.ok),
                             retryButtonText = errorDialogConfig.retryButtonText,
                             dismissButtonText = errorDialogConfig.dismissButtonText,
                             onConfirm = errorDialogConfig.onConfirm,
-                            onRetry = targetState.error.retryAction,
+                            onRetry = uiState.error.retryAction,
                             onCancel = errorDialogConfig.onCancel,
                             onDismissRequest = { errorDialogConfig.onDismissRequest?.invoke() },
                             properties = DialogProperties(
