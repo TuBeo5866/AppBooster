@@ -13,15 +13,12 @@ import com.tony.appbooster.domain.repository.AdbConnectionState
  * @param optimizationProgress Progress of the active optimization job.
  * @param dismissedResultRunIds Set of optimization run ids for which the user dismissed the
  * result card (completed/canceled). Used to prevent the card from reappearing when returning
- * to the Dashboard while the same [optimizationProgress.runId] is still the latest run.
+ * to the Dashboard for the same result.
  */
 data class MainUiModel(
     val connectionState: AdbConnectionState = AdbConnectionState.Disconnected,
     val logs: List<String> = emptyList(),
     val optimizationProgress: OptimizationProgress = OptimizationProgress(),
     val optimizationMode: AppOptimizationType = AppOptimizationType.SPEED_PROFILE,
-    val adbPort: Int? = null,
-    val adbHost: String? = null,
-    val adbPairingCode: Int? = null,
     val dismissedResultRunIds: Set<Long> = emptySet()
 )

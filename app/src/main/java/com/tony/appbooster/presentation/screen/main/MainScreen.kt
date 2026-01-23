@@ -37,7 +37,7 @@ fun MainAppScreen(viewModel: MainViewModel) {
                     val label = when (screen) {
                         Screen.Dashboard -> stringResource(R.string.nav_dashboard)
                         Screen.Settings -> stringResource(R.string.nav_settings)
-                        Screen.ShizukuSetup -> stringResource(R.string.nav_shizuku_setup)
+                        else -> ""
                     }
 
                     NavigationBarItem(

@@ -192,5 +192,4 @@
     <!-- Bottom navigation -->
     <string name="nav_dashboard">Dashboard</string>
     <string name="nav_settings">Settings</string>
-    <string name="nav_shizuku_setup">Shizuku</string>
 </resources>

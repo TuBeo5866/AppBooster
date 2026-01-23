@@ -7,19 +7,14 @@ import com.tony.appbooster.R
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.repository.AdbRepository
 import com.tony.appbooster.domain.usecase.ConnectAdbUseCase
-import com.tony.appbooster.domain.usecase.GetAdbConnectionConfigUseCase
 import com.tony.appbooster.domain.usecase.ObserveAppOptimizationTypeUseCase
 import com.tony.appbooster.domain.usecase.OptimizeAppUseCase
-import com.tony.appbooster.domain.usecase.UpdateAdbHostUseCase
-import com.tony.appbooster.domain.usecase.UpdateAdbPairingCodeUseCase
-import com.tony.appbooster.domain.usecase.UpdateAdbPortUseCase
 import com.tony.appbooster.presentation.viewmodel.base.BaseViewModel
 import com.tony.appbooster.presentation.worker.OptimizationWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -43,12 +38,8 @@ class MainViewModel @Inject constructor(
     private val connectAdbUseCase: ConnectAdbUseCase,
     private val optimizeAppUseCase: OptimizeAppUseCase,
     private val getOptimizeAppUseCase: ObserveAppOptimizationTypeUseCase,
-    private val saveHostUseCase: UpdateAdbHostUseCase,
-    private val savePortUseCase: UpdateAdbPortUseCase,
-    private val savePairingCodeUseCase: UpdateAdbPairingCodeUseCase,
-    private val getAdbConnectionConfigUseCase: GetAdbConnectionConfigUseCase,
     private val repository: AdbRepository,
-    @ApplicationContext private val appContext: Context,
+    @param:ApplicationContext private val appContext: Context,
     navigationManager: NavigationManager
 ) : BaseViewModel<MainUiModel, MainUiEvent, MainUiEffect>(navigationManager) {
 
@@ -59,7 +50,6 @@ class MainViewModel @Inject constructor(
     init {
         observeRepository()
         observeOptimizationMode()
-        loadAdbInfoData()
     }
 
     /**
@@ -78,20 +68,6 @@ class MainViewModel @Inject constructor(
                     updateUiData(current.copy(optimizationMode = newMode))
                 }
         }
-    }
-
-    fun loadAdbInfoData(){
-        launchUiStateUpdate(
-            dataFetchBlock = { getAdbConnectionConfigUseCase().first() },
-            processSuccess = {
-                val currentState = uiState.value.data ?: MainUiModel()
-                currentState.copy(
-                    adbHost = it.host,
-                    adbPort = it.port,
-                    adbPairingCode = it.pairingCode
-                )
-            }
-        )
     }
 
     /**

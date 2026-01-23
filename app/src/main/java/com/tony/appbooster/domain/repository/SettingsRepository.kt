@@ -5,9 +5,12 @@ import com.tony.appbooster.domain.model.settings.AppOptimizationType
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Provides access to user-facing runtime configuration such as optimization
- * behavior and ADB connection details, exposing typed results wrapped into
- * [Resource] for error-aware handling across the domain layer.
+ * Provides access to user-facing runtime configuration.
+ *
+ * Business purpose:
+ * - Persist and observe the selected optimization mode.
+ *
+ * Note: Legacy ADB host/port/pairing-code configuration has been removed.
  */
 interface SettingsRepository {
 
@@ -29,63 +32,5 @@ interface SettingsRepository {
      */
     suspend fun setAppOptimizationType(
         type: AppOptimizationType
-    ): Resource<Unit>
-
-    /**
-     * Observes the configured ADB host name so that connection components
-     * can use user-provided or default values without hardcoding.
-     *
-     * @return A [Flow] emitting the effective ADB host wrapped in [Resource].
-     */
-    fun observeAdbHost(): Flow<Resource<String>>
-
-    /**
-     * Persists the ADB host name provided by the user for future sessions,
-     * enabling dynamic reconfiguration of the ADB client.
-     *
-     * @param host Hostname or IP address of the ADB server.
-     * @return A [Resource] describing whether the host was stored correctly.
-     */
-    suspend fun setAdbHost(
-        host: String
-    ): Resource<Unit>
-
-    /**
-     * Persists the ADB host name provided by the user for future sessions,
-     * enabling dynamic reconfiguration of the ADB client.
-     *
-     * @param host Hostname or IP address of the ADB server.
-     * @return A [Resource] describing whether the host was stored correctly.
-     */
-    suspend fun setAdbParingCode(
-        code: Int
-    ): Resource<Unit>
-
-    /**
-     * Observes the configured ADB TCP port so that the client can connect
-     * without relying on magic numbers or compile-time constants.
-     *
-     * @return A [Flow] emitting the effective ADB port wrapped in [Resource].
-     */
-    fun observeAdbPort(): Flow<Resource<Int>>
-
-
-    /**
-     * Observes the configured ADB TCP pairing code client can connect
-     * without relying on magic numbers or compile-time constants.
-     *
-     * @return A [Flow] emitting the effective ADB port wrapped in [Resource].
-     */
-    fun observeAdbPairingCode(): Flow<Resource<Int>>
-
-    /**
-     * Persists the ADB TCP port provided by the user, ensuring the client
-     * connects to the correct ADB server instance across app restarts.
-     *
-     * @param port TCP port number that the ADB server listens on.
-     * @return A [Resource] describing whether the port was stored correctly.
-     */
-    suspend fun setAdbPort(
-        port: Int
     ): Resource<Unit>
 }
