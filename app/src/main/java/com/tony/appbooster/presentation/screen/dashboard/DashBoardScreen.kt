@@ -1,0 +1,790 @@
+package com.tony.appbooster.presentation.screen.dashboard
+
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.EaseInOutCubic
+import androidx.compose.animation.core.EaseOutBack
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Terminal
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.RocketLaunch
+import androidx.compose.material.icons.rounded.Speed
+import androidx.compose.material.icons.rounded.StopCircle
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LargeTopAppBar
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.tony.appbooster.domain.model.settings.AppOptimizationType
+import com.tony.appbooster.domain.repository.AdbConnectionState
+import com.tony.appbooster.presentation.screen.common.basescreen.AppBaseScreen
+import com.tony.appbooster.presentation.viewmodel.main.MainUiModel
+import com.tony.appbooster.presentation.viewmodel.main.MainViewModel
+
+@Composable
+fun DashboardScreen(viewModel: MainViewModel) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    AppBaseScreen(uiState = uiState) { model ->
+        DashboardContent(
+            model = model,
+            onStartOptimization = viewModel::runAppOptimization,
+            onStopOptimization = viewModel::stopOptimization
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DashboardContent(
+    model: MainUiModel,
+    onStartOptimization: () -> Unit,
+    onStopOptimization: () -> Unit
+) {
+    val listState = rememberLazyListState()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+
+    LaunchedEffect(model.logs.size) {
+        if (model.logs.isNotEmpty()) {
+            listState.animateScrollToItem(model.logs.size - 1)
+        }
+    }
+
+    Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        topBar = {
+            LargeTopAppBar(
+                title = {
+                    Text(
+                        text = "OptiDroid",
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        )
+                    )
+                },
+                actions = {
+                    ConnectionStatusBadge(model.connectionState)
+                },
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.surface
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+        ) {
+            HeroControlPanel(model, onStartOptimization, onStopOptimization)
+            TerminalSection(model.logs, listState)
+        }
+    }
+}
+
+/**
+ * Animated connection status badge with expressive visual feedback.
+ */
+@Composable
+private fun ConnectionStatusBadge(connectionState: AdbConnectionState) {
+    AnimatedVisibility(
+        visible = connectionState is AdbConnectionState.Connected,
+        enter = fadeIn(tween(300)) + scaleIn(
+            initialScale = 0.8f,
+            animationSpec = spring(stiffness = Spring.StiffnessMedium)
+        ),
+        exit = fadeOut(tween(200)) + scaleOut(targetScale = 0.8f)
+    ) {
+        Surface(
+            modifier = Modifier.padding(end = 16.dp),
+            shape = RoundedCornerShape(20.dp),
+            color = MaterialTheme.colorScheme.primaryContainer,
+            tonalElevation = 2.dp
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Pulsing indicator dot
+                val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+                val pulseAlpha by infiniteTransition.animateFloat(
+                    initialValue = 0.6f,
+                    targetValue = 1f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(1000, easing = EaseInOutCubic),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "pulseAlpha"
+                )
+
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .alpha(pulseAlpha)
+                        .background(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = CircleShape
+                        )
+                )
+
+                Text(
+                    text = "Connected",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Hero control panel with gradient background and expressive animations.
+ * Provides the main optimization start/progress interface.
+ */
+@Composable
+private fun HeroControlPanel(
+    model: MainUiModel,
+    onStartOptimization: () -> Unit,
+    onStopOptimization: () -> Unit
+) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val tertiaryColor = MaterialTheme.colorScheme.tertiary
+
+    // Animated gradient rotation
+    val infiniteTransition = rememberInfiniteTransition(label = "gradient")
+    val gradientOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(8000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "gradientOffset"
+    )
+
+    val animatedElevation by animateDpAsState(
+        targetValue = if (model.optimizationProgress.isRunning) 8.dp else 4.dp,
+        animationSpec = spring(stiffness = Spring.StiffnessLow),
+        label = "cardElevation"
+    )
+
+    // Completion banner is UI-only state: dismiss until next run.
+    val completionKey = "${model.optimizationProgress.totalCount}:${model.optimizationProgress.processedCount}:${model.optimizationProgress.progress}"
+    var isCompletionDismissed by remember(completionKey) { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier
+            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = animatedElevation),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+        )
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .drawBehind {
+                    // Subtle animated gradient overlay
+                    val startX = size.width * gradientOffset
+                    drawRect(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                primaryColor.copy(alpha = 0.05f),
+                                tertiaryColor.copy(alpha = 0.08f),
+                                primaryColor.copy(alpha = 0.03f)
+                            ),
+                            start = Offset(startX, 0f),
+                            end = Offset(startX + size.width, size.height)
+                        )
+                    )
+                }
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                AnimatedContent(
+                    targetState = model.optimizationProgress.isRunning,
+                    label = "OptimizationStateAnimation",
+                    transitionSpec = {
+                        (slideInVertically(
+                            initialOffsetY = { it / 3 },
+                            animationSpec = tween(400, easing = EaseOutBack)
+                        ) + fadeIn(tween(300)))
+                            .togetherWith(
+                                slideOutVertically(
+                                    targetOffsetY = { -it / 3 },
+                                    animationSpec = tween(300, easing = EaseOutCubic)
+                                ) + fadeOut(tween(200))
+                            )
+                            .using(SizeTransform(clip = false))
+                    }
+                ) { isRunning ->
+                    when {
+                        isRunning -> OptimizationRunningContent(model = model, onStopOptimization = onStopOptimization)
+                        model.optimizationProgress.isCompleted && !isCompletionDismissed -> {
+                            OptimizationCompletedContent(
+                                processedCount = model.optimizationProgress.processedCount,
+                                totalCount = model.optimizationProgress.totalCount,
+                                onDismiss = { isCompletionDismissed = true },
+                                onRunAgain = onStartOptimization
+                            )
+                        }
+                        else -> {
+                            OptimizationReadyContent(
+                                optimizationMode = model.optimizationMode,
+                                onStartOptimization = onStartOptimization
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Expressive progress display during active optimization.
+ * Features animated progress bar, pulsing icon, and a prominent stop action.
+ *
+ * @param model Current screen model containing progress information.
+ * @param onStopOptimization Callback when the user requests cancellation.
+ */
+@Composable
+private fun OptimizationRunningContent(
+    model: MainUiModel,
+    onStopOptimization: () -> Unit
+) {
+    val progress = model.optimizationProgress
+
+    // Pulsing animation for the icon
+    val infiniteTransition = rememberInfiniteTransition(label = "running")
+    val iconScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, easing = EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "iconScale"
+    )
+
+    val progressAnimated by animateFloatAsState(
+        targetValue = progress.progress,
+        animationSpec = tween(400, easing = EaseOutCubic),
+        label = "progressAnim"
+    )
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // Animated icon container
+        Surface(
+            modifier = Modifier
+                .size(72.dp)
+                .scale(iconScale),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            tonalElevation = 4.dp
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Rounded.Speed,
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        Text(
+            text = "Optimizing Apps",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Text(
+            text = "Please wait while we enhance performance",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
+        )
+
+        // Progress indicator with rounded design
+        LinearProgressIndicator(
+            progress = { progressAnimated },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(12.dp)
+                .clip(RoundedCornerShape(6.dp)),
+            strokeCap = StrokeCap.Round,
+            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            color = MaterialTheme.colorScheme.primary
+        )
+
+        Spacer(Modifier.height(16.dp))
+
+        // Current app info
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Current app",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = progress.currentAppPackage.ifEmpty { "Preparing..." },
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.primary
+                ) {
+                    Text(
+                        text = "${progress.processedCount}/${progress.totalCount}",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        // Stop action (modern, discoverable, but not overly destructive-looking)
+        val containerElevation by animateDpAsState(
+            targetValue = 2.dp,
+            animationSpec = spring(stiffness = Spring.StiffnessMedium),
+            label = "stopElevation"
+        )
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .clickable(onClick = onStopOptimization),
+            color = MaterialTheme.colorScheme.errorContainer,
+            tonalElevation = containerElevation
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.StopCircle,
+                    contentDescription = "Stop optimization",
+                    tint = MaterialTheme.colorScheme.onErrorContainer
+                )
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Stop",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                    Text(
+                        text = "Cancels after the current app finishes",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.85f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OptimizationReadyContent(
+    optimizationMode: AppOptimizationType,
+    onStartOptimization: () -> Unit
+) {
+    // Subtle floating animation for the icon
+    val infiniteTransition = rememberInfiniteTransition(label = "idle")
+    val iconOffset by infiniteTransition.animateFloat(
+        initialValue = -3f,
+        targetValue = 3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "iconOffset"
+    )
+
+    // Dynamic content based on optimization mode
+    val (title, description, icon) = when (optimizationMode) {
+        AppOptimizationType.SPEED_PROFILE -> Triple(
+            "Speed Profile",
+            "Optimize apps based on usage patterns",
+            Icons.Rounded.Speed
+        )
+        AppOptimizationType.FULL_OPTIMIZATION -> Triple(
+            "Full Optimization",
+            "Maximum performance compilation",
+            Icons.Rounded.RocketLaunch
+        )
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Animated icon
+        Surface(
+            modifier = Modifier
+                .size(64.dp)
+                .graphicsLayer { translationY = iconOffset },
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            tonalElevation = 4.dp
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        Column(horizontalAlignment = Alignment.End) {
+            FilledTonalButton(
+                onClick = onStartOptimization,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = "Start",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Expressive completion panel displayed after a successful optimization run.
+ *
+ * @param processedCount Number of optimized apps.
+ * @param totalCount Total apps targeted by the run.
+ * @param onDismiss Callback to hide this panel until the next run.
+ * @param onRunAgain Callback to start optimization again.
+ */
+@Composable
+private fun OptimizationCompletedContent(
+    processedCount: Int,
+    totalCount: Int,
+    onDismiss: () -> Unit,
+    onRunAgain: () -> Unit
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "completed")
+    val iconScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = EaseInOutCubic),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "iconScale"
+    )
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Surface(
+            modifier = Modifier
+                .size(72.dp)
+                .scale(iconScale),
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            tonalElevation = 4.dp
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = Icons.Rounded.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(38.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        Text(
+            text = "Optimization finished",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold
+        )
+
+        Text(
+            text = "$processedCount of $totalCount apps optimized",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 4.dp, bottom = 18.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            FilledTonalButton(
+                onClick = onRunAgain,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text("Run again")
+            }
+
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.align(Alignment.CenterVertically)
+            ) {
+                Text("Dismiss")
+            }
+        }
+    }
+}
+
+/**
+ * Terminal output section displaying real-time logs with improved styling.
+ */
+@Composable
+private fun TerminalSection(
+    logs: List<String>,
+    listState: androidx.compose.foundation.lazy.LazyListState
+) {
+    Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+        // Section header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Terminal,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "Terminal Output",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // Terminal card with dark theme
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .padding(bottom = 16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = Color(0xFF0D1117)  // GitHub-style dark terminal
+            ),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            if (logs.isEmpty()) {
+                // Empty state
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Terminal,
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(48.dp)
+                                .alpha(0.3f),
+                            tint = Color(0xFF8B949E)
+                        )
+                        Text(
+                            text = "No output yet",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF8B949E)
+                        )
+                        Text(
+                            text = "Start optimization to see terminal output",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF6E7681)
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    contentPadding = PaddingValues(16.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    // Key MUST be unique. Logs can repeat, so we key by index.
+                    itemsIndexed(
+                        items = logs,
+                        key = { index, _ -> index }
+                    ) { _, log ->
+                        val textColor = when {
+                            log.startsWith(">") -> Color(0xFF58A6FF)  // Blue for commands
+                            log.contains("success", ignoreCase = true) -> Color(0xFF3FB950)  // Green
+                            log.contains("error", ignoreCase = true) -> Color(0xFFF85149)  // Red
+                            log.contains("warning", ignoreCase = true) -> Color(0xFFD29922)  // Yellow
+                            else -> Color(0xFFC9D1D9)  // Default gray
+                        }
+
+                        Text(
+                            text = log,
+                            color = textColor,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.sp,
+                            lineHeight = 18.sp,
+                            modifier = Modifier.padding(vertical = 2.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
