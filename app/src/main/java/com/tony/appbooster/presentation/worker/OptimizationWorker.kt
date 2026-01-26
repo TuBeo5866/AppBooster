@@ -14,7 +14,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.distinctUntilChangedBy
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -52,21 +51,30 @@ class OptimizationWorker @AssistedInject constructor(
             WorkForegroundNotificationHelper.createForegroundInfo(
                 context = applicationContext,
                 workId = id.toString(),
-                currentLabel = null
+                currentLabel = null,
+                progressPercent = null,
+                progressCurrent = null,
+                progressTotal = null
             )
         )
 
-        // Update notification whenever the current package changes.
+        // Update notification whenever the current package/progress changes.
         val notificationJob: Job = launch {
             repository.optimizationProgress
-                .map { it.currentAppPackage }
-                .distinctUntilChangedBy { it }
-                .collect { currentPackage ->
+                .distinctUntilChangedBy { progress ->
+                    // Avoid spam updates; update when either current app or computed percent changes.
+                    "${progress.currentAppPackage}|${(progress.progress * 100f).toInt()}|${progress.processedCount}|${progress.totalCount}"
+                }
+                .collect { progress ->
+                    val percent = (progress.progress * 100f).toInt().coerceIn(0, 100)
                     setForeground(
                         WorkForegroundNotificationHelper.createForegroundInfo(
                             context = applicationContext,
                             workId = id.toString(),
-                            currentLabel = currentPackage.ifBlank { null }
+                            currentLabel = progress.currentAppPackage.ifBlank { null },
+                            progressPercent = if (progress.totalCount > 0) percent else null,
+                            progressCurrent = progress.processedCount,
+                            progressTotal = progress.totalCount
                         )
                     )
                 }

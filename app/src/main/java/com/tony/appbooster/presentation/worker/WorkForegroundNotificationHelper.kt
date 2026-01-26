@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat
 import androidx.work.ForegroundInfo
 import com.tony.appbooster.R
 import com.tony.appbooster.presentation.activity.MainActivity
+import kotlin.math.roundToInt
 
 /**
  * Builds and manages the foreground notification used by long-running WorkManager jobs.
@@ -47,17 +48,26 @@ object WorkForegroundNotificationHelper {
      * @param context Context used to resolve resources.
      * @param workId WorkManager work id used for the Stop action.
      * @param currentLabel Optional label to show as the notification content text.
+     * @param progressPercent Optional 0..100 progress value.
+     * @param progressCurrent Optional current step index (e.g., processed apps).
+     * @param progressTotal Optional total steps.
      * @return [ForegroundInfo] ready to be passed to `setForeground()`.
      */
     fun createForegroundInfo(
         context: Context,
         workId: String,
-        currentLabel: String?
+        currentLabel: String?,
+        progressPercent: Int? = null,
+        progressCurrent: Int? = null,
+        progressTotal: Int? = null
     ): ForegroundInfo {
         val notification = buildNotification(
             context = context,
             workId = workId,
-            currentLabel = currentLabel
+            currentLabel = currentLabel,
+            progressPercent = progressPercent,
+            progressCurrent = progressCurrent,
+            progressTotal = progressTotal
         )
 
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -77,15 +87,30 @@ object WorkForegroundNotificationHelper {
      * @param context Context used to resolve strings and create intents.
      * @param workId WorkManager work id used by the Stop action receiver.
      * @param currentLabel Optional label shown as notification content.
+     * @param progressPercent Optional 0..100 progress value.
+     * @param progressCurrent Optional current step index.
+     * @param progressTotal Optional total steps.
      */
     fun buildNotification(
         context: Context,
         workId: String,
-        currentLabel: String?
+        currentLabel: String?,
+        progressPercent: Int? = null,
+        progressCurrent: Int? = null,
+        progressTotal: Int? = null
     ): Notification {
         val title = context.getString(R.string.app_name)
-        val contentText = currentLabel?.takeIf { it.isNotBlank() }
+
+        val progressPrefix = when {
+            progressPercent != null -> "${progressPercent.coerceIn(0, 100)}%"
+            progressCurrent != null && progressTotal != null && progressTotal > 0 -> "$progressCurrent/$progressTotal"
+            else -> null
+        }
+
+        val baseText = currentLabel?.takeIf { it.isNotBlank() }
             ?: context.getString(R.string.optimization_notification_preparing)
+
+        val contentText = progressPrefix?.let { "$it • $baseText" } ?: baseText
 
         val contentIntent = PendingIntent.getActivity(
             context,
@@ -104,7 +129,7 @@ object WorkForegroundNotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        return NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle(title)
             .setContentText(contentText)
@@ -119,7 +144,21 @@ object WorkForegroundNotificationHelper {
                     stopPendingIntent
                 )
             )
-            .build()
+
+        // Determinate progress bar when we have a usable percentage.
+        // Note: Notification progress bars are not shown in all OEM skins, but it's the standard API.
+        progressPercent?.let { percent ->
+            builder.setProgress(100, percent.coerceIn(0, 100), false)
+        }
+
+        // If we do NOT have a percent but we do have current/total, we can still render a percent.
+        if (progressPercent == null && progressCurrent != null && progressTotal != null && progressTotal > 0) {
+            val derivedPercent = ((progressCurrent.toFloat() / progressTotal.toFloat()) * 100f).roundToInt()
+                .coerceIn(0, 100)
+            builder.setProgress(100, derivedPercent, false)
+        }
+
+        return builder.build()
     }
 
     private const val NOTIFICATION_CHANNEL_ID = "optimization"

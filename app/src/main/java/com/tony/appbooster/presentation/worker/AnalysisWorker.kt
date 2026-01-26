@@ -14,7 +14,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.distinctUntilChangedBy
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -48,21 +47,28 @@ class AnalysisWorker @AssistedInject constructor(
             WorkForegroundNotificationHelper.createForegroundInfo(
                 context = applicationContext,
                 workId = id.toString(),
-                currentLabel = null
+                currentLabel = null,
+                progressCurrent = 0,
+                progressTotal = 0
             )
         )
 
-        // Update notification whenever the current package changes.
+        // Update notification whenever the current package/progress changes.
         val notificationJob: Job = launch {
             repository.optimizationAnalysis
-                .map { it.currentPackage }
-                .distinctUntilChangedBy { it }
-                .collect { currentPackage ->
+                .distinctUntilChangedBy { analysis ->
+                    "${analysis.currentPackage}|${analysis.totalAppsScanned}|${analysis.totalAppsToScan}"
+                }
+                .collect { analysis ->
+                    val percent = (analysis.progress * 100f).toInt().coerceIn(0, 100)
                     setForeground(
                         WorkForegroundNotificationHelper.createForegroundInfo(
                             context = applicationContext,
                             workId = id.toString(),
-                            currentLabel = currentPackage.ifBlank { null }
+                            currentLabel = analysis.currentPackage.ifBlank { null },
+                            progressPercent = if (analysis.totalAppsToScan > 0) percent else null,
+                            progressCurrent = analysis.totalAppsScanned,
+                            progressTotal = analysis.totalAppsToScan
                         )
                     )
                 }
