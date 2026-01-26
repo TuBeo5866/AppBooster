@@ -6,7 +6,9 @@ import com.alkemy.boxapp.presentation.navigation.interfaces.NavigationManager
 import com.tony.appbooster.R
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.usecase.CancelAnalysisUseCase
+import com.tony.appbooster.domain.usecase.CancelAnalysisWorkUseCase
 import com.tony.appbooster.domain.usecase.CancelOptimizationUseCase
+import com.tony.appbooster.domain.usecase.CancelOptimizationWorkUseCase
 import com.tony.appbooster.domain.usecase.ConnectAdbUseCase
 import com.tony.appbooster.domain.usecase.ObserveAdbConnectionStateUseCase
 import com.tony.appbooster.domain.usecase.ObserveAppOptimizationTypeUseCase
@@ -16,9 +18,8 @@ import com.tony.appbooster.domain.usecase.ObserveOptimizationLogEntriesUseCase
 import com.tony.appbooster.domain.usecase.ObserveOptimizationProgressUseCase
 import com.tony.appbooster.domain.usecase.OptimizeAppUseCase
 import com.tony.appbooster.domain.usecase.StartAnalysisUseCase
+import com.tony.appbooster.domain.usecase.StartOptimizationUseCase
 import com.tony.appbooster.presentation.viewmodel.base.BaseViewModel
-import com.tony.appbooster.presentation.worker.AnalysisWorker
-import com.tony.appbooster.presentation.worker.OptimizationWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,6 +47,8 @@ class MainViewModel @Inject constructor(
     private val optimizeAppUseCase: OptimizeAppUseCase,
     private val cancelOptimizationUseCase: CancelOptimizationUseCase,
     private val cancelAnalysisUseCase: CancelAnalysisUseCase,
+    private val cancelOptimizationWorkUseCase: CancelOptimizationWorkUseCase,
+    private val cancelAnalysisWorkUseCase: CancelAnalysisWorkUseCase,
     private val getOptimizeAppUseCase: ObserveAppOptimizationTypeUseCase,
     private val observeAdbConnectionStateUseCase: ObserveAdbConnectionStateUseCase,
     private val observeCommandOutputUseCase: ObserveCommandOutputUseCase,
@@ -53,6 +56,7 @@ class MainViewModel @Inject constructor(
     private val observeOptimizationProgressUseCase: ObserveOptimizationProgressUseCase,
     private val observeOptimizationAnalysisUseCase: ObserveOptimizationAnalysisUseCase,
     private val startAnalysisUseCase: StartAnalysisUseCase,
+    private val startOptimizationUseCase: StartOptimizationUseCase,
     @param:ApplicationContext private val appContext: Context,
     navigationManager: NavigationManager
 ) : BaseViewModel<MainUiModel, MainUiEvent, MainUiEffect>(navigationManager) {
@@ -203,13 +207,14 @@ class MainViewModel @Inject constructor(
     }
 
     private fun onStopAnalysisRequested() {
-        AnalysisWorker.cancel(appContext)
+        // Cancel background work first so the notification is removed immediately.
+        cancelAnalysisWorkUseCase()
+
+        // Also request repository-side cancellation so UI/progress updates instantly.
         launchUiStateUpdate(
             dataFetchBlock = { cancelAnalysisUseCase() },
             skipLoading = true,
-            processSuccess = {
-                uiState.value.data ?: MainUiModel()
-            }
+            processSuccess = { uiState.value.data ?: MainUiModel() }
         )
     }
 
@@ -235,21 +240,16 @@ class MainViewModel @Inject constructor(
         }
 
         launchUiStateUpdate(
-            dataFetchBlock = { connectAdbUseCase() },
+            dataFetchBlock = { startOptimizationUseCase(optimizationMode) },
             skipLoading = true,
             processSuccess = {
-                // Keep current UI data; repository flows will push connection/progress/log updates.
+                // Keep current UI data; repository flows will push updates.
                 uiState.value.data ?: MainUiModel()
             },
-            invokeOnCompletion = { success ->
-                // Clear loading state
+            invokeOnCompletion = {
+                // Clear loading state (scheduled regardless of success)
                 uiState.value.data?.let { currentData ->
                     updateUiData(currentData.copy(isStartingOptimization = false))
-                }
-
-                if (success) {
-                    // New run will produce a new progress.runId from the repository; no explicit reset needed.
-                    OptimizationWorker.enqueue(appContext, optimizationMode)
                 }
             }
         )
@@ -257,7 +257,7 @@ class MainViewModel @Inject constructor(
 
     private fun onStopOptimizationRequested() {
         // Cancel WorkManager so background execution stops and notification goes away.
-        OptimizationWorker.cancel(appContext)
+        cancelOptimizationWorkUseCase()
 
         // Also request repository-side cancellation immediately to update UI/progress flow.
         stopOptimization()

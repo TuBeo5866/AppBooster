@@ -2,26 +2,26 @@ package com.tony.appbooster.domain.usecase
 
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.model.settings.AppOptimizationType
-import com.tony.appbooster.domain.scheduler.AnalysisWorkScheduler
+import com.tony.appbooster.domain.scheduler.OptimizationWorkScheduler
 import javax.inject.Inject
 
 /**
- * Enqueues the foreground analysis WorkManager job.
+ * Enqueues the foreground optimization WorkManager job.
  *
  * Business purpose:
  * - Centralizes work scheduling behind a testable abstraction.
- * - Keeps ViewModels and orchestration code free of WorkManager details.
+ * - Keeps ViewModels free of WorkManager details.
  *
- * @property scheduler Scheduler responsible for enqueuing and canceling analysis work.
+ * @property scheduler Scheduler responsible for enqueuing and canceling work.
  */
-class StartAnalysisWorkUseCase @Inject constructor(
-    private val scheduler: AnalysisWorkScheduler
+class StartOptimizationWorkUseCase @Inject constructor(
+    private val scheduler: OptimizationWorkScheduler
 ) {
 
     /**
-     * Enqueues analysis as unique work.
+     * Enqueues optimization as unique work.
      *
-     * @param mode Optimization mode used for analysis criteria.
+     * @param mode Optimization mode to execute.
      * @return [Resource.Success] when the request is enqueued.
      */
     operator fun invoke(mode: AppOptimizationType): Resource<Unit> {
