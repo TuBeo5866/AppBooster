@@ -6,17 +6,21 @@ package com.tony.appbooster.domain.model.common
  * This data is collected before optimization starts to show the user
  * how many apps need optimization vs are already optimized.
  *
- * @property totalAppsScanned Total number of installed apps that were analyzed.
+ * @property totalAppsScanned Total number of installed apps that were analyzed so far.
+ * @property totalAppsToScan Total number of apps to be scanned (for progress calculation).
  * @property appsNeedingOptimization Number of apps that need optimization.
  * @property appsAlreadyOptimized Number of apps that are already optimized (will be skipped).
  * @property isScanning Whether the analysis is currently in progress.
+ * @property currentPackage Package currently being analyzed, empty if not scanning.
  * @property lastScanTimeMs Timestamp of when the last scan completed, or null if never scanned.
  */
 data class OptimizationAnalysis(
     val totalAppsScanned: Int = 0,
+    val totalAppsToScan: Int = 0,
     val appsNeedingOptimization: Int = 0,
     val appsAlreadyOptimized: Int = 0,
     val isScanning: Boolean = false,
+    val currentPackage: String = "",
     val lastScanTimeMs: Long? = null
 ) {
     /**
@@ -30,4 +34,10 @@ data class OptimizationAnalysis(
      */
     val allOptimized: Boolean
         get() = hasScanned && appsNeedingOptimization == 0 && appsAlreadyOptimized > 0
+
+    /**
+     * Progress of the current scan from 0f to 1f.
+     */
+    val progress: Float
+        get() = if (totalAppsToScan > 0) totalAppsScanned.toFloat() / totalAppsToScan else 0f
 }

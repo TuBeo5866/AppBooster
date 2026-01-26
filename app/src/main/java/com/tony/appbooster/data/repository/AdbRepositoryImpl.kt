@@ -60,6 +60,13 @@ class AdbRepositoryImpl @Inject constructor(
     private val optimizationCancelRequested = AtomicBoolean(false)
 
     /**
+     * In-memory cache of packages we've successfully optimized in this session.
+     * Maps package name to the timestamp when it was optimized.
+     * This avoids re-checking packages we just optimized.
+     */
+    private val recentlyOptimizedPackages = mutableMapOf<String, Long>()
+
+    /**
      * Ensures Shizuku is ready and validates shell access with a health check.
      *
      * @return [Resource.Success] when ready, or [Resource.Error] with details.
@@ -166,6 +173,8 @@ class AdbRepositoryImpl @Inject constructor(
             optimizationCancelRequested.set(false)
             clearLogEntries()
 
+            addLogEntry(LogEntryType.START, "Starting optimization", detail = "Mode: $compileMode")
+
             val allPackages = queryInstalledPackages()
 
             if (allPackages.isEmpty()) {
@@ -175,12 +184,45 @@ class AdbRepositoryImpl @Inject constructor(
             }
 
             addLog("Found ${allPackages.size} installed packages.")
-            addLog("Analyzing optimization status...")
-            addLogEntry(LogEntryType.START, "Starting optimization", detail = "${allPackages.size} apps found")
 
-            // Query compilation status and filter apps that need optimization
-            val packagesToOptimize = filterPackagesForOptimization(allPackages, compileMode)
-            val skippedCount = allPackages.size - packagesToOptimize.size
+            // Check if we have a valid analysis we can reuse (persists for app lifecycle)
+            val existingAnalysis = _optimizationAnalysis.value
+            val analysisIsValid = existingAnalysis.lastScanTimeMs != null &&
+                existingAnalysis.totalAppsScanned > 0
+
+            val packagesToOptimize: List<String>
+            val skippedCount: Int
+
+            if (analysisIsValid) {
+                // Reuse existing analysis - no need to re-scan
+                addLog("Using existing analysis from this session")
+                addLogEntry(LogEntryType.INFO, "Using cached analysis", detail = "${existingAnalysis.appsNeedingOptimization} apps need optimization")
+
+                // We still need to get the actual package list to optimize
+                // Filter based on cached optimization info (uses in-memory cache)
+                packagesToOptimize = filterPackagesForOptimization(allPackages, compileMode)
+                skippedCount = allPackages.size - packagesToOptimize.size
+            } else {
+                // Need to perform fresh analysis
+                addLog("Analyzing optimization status...")
+                addLogEntry(LogEntryType.ANALYZING, "Analyzing apps...", detail = "Checking ${allPackages.size} apps")
+
+                // Query compilation status and filter apps that need optimization
+                packagesToOptimize = filterPackagesForOptimization(allPackages, compileMode)
+                skippedCount = allPackages.size - packagesToOptimize.size
+
+                // Update the analysis state for future use
+                _optimizationAnalysis.value = OptimizationAnalysis(
+                    totalAppsScanned = allPackages.size,
+                    appsNeedingOptimization = packagesToOptimize.size,
+                    appsAlreadyOptimized = skippedCount,
+                    isScanning = false,
+                    lastScanTimeMs = System.currentTimeMillis()
+                )
+
+                addLogEntry(LogEntryType.COMPLETE, "Analysis complete", detail = "${packagesToOptimize.size} need optimization, $skippedCount already optimized")
+            }
+
             val total = packagesToOptimize.size
 
             if (total == 0) {
@@ -245,6 +287,8 @@ class AdbRepositoryImpl @Inject constructor(
                     onSuccess = { output ->
                         addLog("Success: optimized $packageName")
                         addLogEntry(LogEntryType.SUCCESS, "Optimized", packageName = packageName)
+                        // Cache this package as successfully optimized
+                        recentlyOptimizedPackages[packageName] = System.currentTimeMillis()
                         // Only log output if it contains more info than just "Success"
                         val trimmed = output.trim()
                         if (trimmed.isNotBlank() && !trimmed.equals("Success", ignoreCase = true)) {
@@ -266,6 +310,15 @@ class AdbRepositoryImpl @Inject constructor(
 
             addLog("✓ Optimization complete! $total apps optimized, $skippedCount skipped.")
             addLogEntry(LogEntryType.COMPLETE, "Optimization complete!", detail = "$total apps optimized")
+
+            // Update analysis to reflect that all apps are now optimized
+            _optimizationAnalysis.value = OptimizationAnalysis(
+                totalAppsScanned = allPackages.size,
+                appsNeedingOptimization = 0,
+                appsAlreadyOptimized = allPackages.size,
+                isScanning = false,
+                lastScanTimeMs = System.currentTimeMillis()
+            )
 
             _optimizationProgress.value = _optimizationProgress.value.copy(
                 isRunning = false,
@@ -297,7 +350,7 @@ class AdbRepositoryImpl @Inject constructor(
      * Analyzes all installed apps to determine which need optimization.
      *
      * This is a lightweight scan that checks compilation status without
-     * actually performing optimization.
+     * actually performing optimization. Shows per-app progress in the activity feed.
      *
      * @param mode The optimization mode to analyze against.
      * @return [Resource] with [OptimizationAnalysis] results.
@@ -306,10 +359,13 @@ class AdbRepositoryImpl @Inject constructor(
         mode: AppOptimizationType
     ): Resource<OptimizationAnalysis> {
         return runCatching {
+            // Clear previous log entries for a fresh analysis view
+            clearLogEntries()
+
             _optimizationAnalysis.value = _optimizationAnalysis.value.copy(isScanning = true)
 
             // Add log entry for analysis start
-            addLogEntry(LogEntryType.ANALYZING, "Analyzing apps...", detail = "Checking optimization status")
+            addLogEntry(LogEntryType.START, "Starting analysis", detail = "Checking optimization status")
 
             val allPackages = queryInstalledPackages()
 
@@ -326,26 +382,68 @@ class AdbRepositoryImpl @Inject constructor(
                 return@runCatching result
             }
 
-            addLogEntry(LogEntryType.ANALYZING, "Scanning ${allPackages.size} apps...")
+            addLogEntry(LogEntryType.ANALYZING, "Found ${allPackages.size} apps", detail = "Checking each app...")
 
             val compileMode = mode.value
             var needsOptimization = 0
             var alreadyOptimized = 0
+            val totalApps = allPackages.size
 
-            for (packageName in allPackages) {
+            // Initialize progress tracking
+            _optimizationAnalysis.value = _optimizationAnalysis.value.copy(
+                totalAppsToScan = totalApps,
+                totalAppsScanned = 0,
+                currentPackage = ""
+            )
+
+            for ((index, packageName) in allPackages.withIndex()) {
+                // Update current package being analyzed
+                _optimizationAnalysis.value = _optimizationAnalysis.value.copy(
+                    currentPackage = packageName,
+                    totalAppsScanned = index
+                )
+
                 val compilationInfo = queryPackageCompilationInfo(packageName, compileMode)
+
                 if (compilationInfo.needsOptimization) {
                     needsOptimization++
+                    // Show apps that need optimization
+                    addLogEntry(
+                        LogEntryType.INFO,
+                        "Needs optimization",
+                        packageName = packageName,
+                        detail = compilationInfo.compilerFilter?.let { "Current: $it" } ?: "Not compiled"
+                    )
                 } else {
                     alreadyOptimized++
+                    // Show apps that are already optimized
+                    val reason = when (val skip = compilationInfo.skipReason) {
+                        is AppCompilationInfo.SkipReason.RecentlyOptimized -> "Optimized (${skip.filter})"
+                        is AppCompilationInfo.SkipReason.AlreadyOptimal -> "Optimal (${skip.filter})"
+                        else -> "Already optimized"
+                    }
+                    addLogEntry(
+                        LogEntryType.SUCCESS,
+                        reason,
+                        packageName = packageName
+                    )
                 }
+
+                // Update progress state
+                _optimizationAnalysis.value = _optimizationAnalysis.value.copy(
+                    totalAppsScanned = index + 1,
+                    appsNeedingOptimization = needsOptimization,
+                    appsAlreadyOptimized = alreadyOptimized
+                )
             }
 
             val result = OptimizationAnalysis(
                 totalAppsScanned = allPackages.size,
+                totalAppsToScan = allPackages.size,
                 appsNeedingOptimization = needsOptimization,
                 appsAlreadyOptimized = alreadyOptimized,
                 isScanning = false,
+                currentPackage = "",
                 lastScanTimeMs = System.currentTimeMillis()
             )
             _optimizationAnalysis.value = result
@@ -549,11 +647,13 @@ class AdbRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Queries the compilation status for a single package using a simple approach:
-     * 1. Use `pm compile --check` if available (Android 10+)
-     * 2. Fall back to dumpsys package for compiler filter info
+     * Queries the compilation status for a single package using multiple approaches:
+     * 1. Check in-memory cache for recently optimized packages
+     * 2. Use `dumpsys package dexopt` to check dexopt status (most reliable)
+     * 3. Fall back to checking compiler filter in package dump
      *
-     * This simplified approach is more reliable than checking oat file timestamps.
+     * This approach is more reliable than `cmd package compile --check` which
+     * isn't available on all Android versions.
      *
      * @param packageName Package to query.
      * @param targetFilter The optimization filter we intend to apply.
@@ -563,65 +663,117 @@ class AdbRepositoryImpl @Inject constructor(
         packageName: String,
         targetFilter: String
     ): AppCompilationInfo {
-        // Try the simple compile --check approach first (Android 10+)
-        // This returns the current compilation status directly
-        val checkCommand = "cmd package compile --check $packageName 2>/dev/null"
-        val checkResult = shellDataSource.executeCommand(checkCommand)
+        // First, check if we optimized this package recently in this session
+        val cachedOptimizationTime = recentlyOptimizedPackages[packageName]
+        if (cachedOptimizationTime != null) {
+            val hoursSinceOptimization = (System.currentTimeMillis() - cachedOptimizationTime) / (1000 * 60 * 60)
+            // If optimized within the last 24 hours, skip shell check
+            if (hoursSinceOptimization < 24) {
+                return AppCompilationInfo(
+                    packageName = packageName,
+                    compilerFilter = targetFilter, // We optimized it with the target filter
+                    lastCompilationTimeMs = cachedOptimizationTime,
+                    lastUpdateTimeMs = null,
+                    oatFileExists = true,
+                    skipReason = AppCompilationInfo.SkipReason.RecentlyOptimized(0, targetFilter),
+                    needsOptimization = false
+                )
+            }
+        }
 
         var compilerFilter: String? = null
         var lastUpdateTimeMs: Long? = null
 
-        checkResult.getOrNull()?.let { output ->
-            // Output format varies but often includes the filter like "speed-profile" or "speed"
-            val trimmed = output.trim().lowercase()
-            when {
-                trimmed.contains("speed-profile") -> compilerFilter = "speed-profile"
-                trimmed.contains("everything") -> compilerFilter = "everything"
-                trimmed.contains("speed") && !trimmed.contains("profile") -> compilerFilter = "speed"
-                trimmed.contains("quicken") -> compilerFilter = "quicken"
-                trimmed.contains("verify") -> compilerFilter = "verify"
-                trimmed.contains("extract") -> compilerFilter = "extract"
-            }
+        // Approach 1: Use dumpsys package dexopt to get the actual dexopt state
+        // This is more reliable than compile --check
+        val dexoptCommand = "dumpsys package dexopt | grep -A 2 '$packageName' | head -5"
+        val dexoptResult = shellDataSource.executeCommand(dexoptCommand)
+
+        dexoptResult.fold(
+            onSuccess = { output ->
+                val trimmed = output.trim().lowercase()
+                // Look for compilation status indicators
+                when {
+                    trimmed.contains("speed-profile") -> compilerFilter = "speed-profile"
+                    trimmed.contains("everything") -> compilerFilter = "everything"
+                    trimmed.contains("[status=speed]") ||
+                        (trimmed.contains("speed") && !trimmed.contains("profile") && !trimmed.contains("speed-profile")) ->
+                        compilerFilter = "speed"
+                    trimmed.contains("quicken") -> compilerFilter = "quicken"
+                    trimmed.contains("verify") -> compilerFilter = "verify"
+                    trimmed.contains("run-from-apk") || trimmed.contains("extract") -> compilerFilter = "extract"
+                }
+            },
+            onFailure = { /* Silently continue to next approach */ }
+        )
+
+        // Approach 2: If dexopt dump didn't work, check package info for dexopt status
+        if (compilerFilter == null) {
+            val packageDumpCommand = "dumpsys package $packageName 2>/dev/null | grep -E '(dexopt|compiler|Dexopt|status=|lastUpdateTime=)' | head -10"
+            val packageResult = shellDataSource.executeCommand(packageDumpCommand)
+
+            packageResult.fold(
+                onSuccess = { output ->
+                    output.lines().forEach { line ->
+                        val trimmed = line.trim().lowercase()
+                        when {
+                            // Look for dexopt status line
+                            compilerFilter == null && (trimmed.contains("status=") || trimmed.contains("compiler")) -> {
+                                when {
+                                    trimmed.contains("speed-profile") -> compilerFilter = "speed-profile"
+                                    trimmed.contains("everything") -> compilerFilter = "everything"
+                                    trimmed.contains("speed") && !trimmed.contains("profile") -> compilerFilter = "speed"
+                                    trimmed.contains("quicken") -> compilerFilter = "quicken"
+                                    trimmed.contains("verify") -> compilerFilter = "verify"
+                                }
+                            }
+                            // Parse update time
+                            trimmed.startsWith("lastupdatetime=") && lastUpdateTimeMs == null -> {
+                                val timeStr = line.substringAfter("=").trim()
+                                lastUpdateTimeMs = parseTimestamp(timeStr)
+                            }
+                        }
+                    }
+                },
+                onFailure = { /* Silently continue to next approach */ }
+            )
         }
 
-        // If --check didn't work, try dumpsys package for just the essential info
+        // Approach 3: As a last resort, check if oat files exist for this package
         if (compilerFilter == null) {
-            // Use grep to get only the lines we need - much faster than full dumpsys
-            val grepCommand = "dumpsys package $packageName 2>/dev/null | grep -E '(status=|lastUpdateTime=|firstInstallTime=)' | head -5"
-            val grepResult = shellDataSource.executeCommand(grepCommand)
+            val oatCheckCommand = "ls /data/app/*$packageName*/oat/arm64/*.odex 2>/dev/null || ls /data/app/*$packageName*/oat/arm/*.odex 2>/dev/null"
+            val oatResult = shellDataSource.executeCommand(oatCheckCommand)
 
-            grepResult.getOrNull()?.lines()?.forEach { line ->
-                val trimmed = line.trim()
-                when {
-                    trimmed.contains("status=") && compilerFilter == null -> {
-                        val match = Regex("""status=(\w+[-\w]*)""").find(trimmed)
-                        compilerFilter = match?.groupValues?.getOrNull(1)
-                    }
-                    trimmed.startsWith("lastUpdateTime=") && lastUpdateTimeMs == null -> {
-                        val timeStr = trimmed.substringAfter("lastUpdateTime=").trim()
-                        lastUpdateTimeMs = parseTimestamp(timeStr)
-                    }
-                    trimmed.startsWith("firstInstallTime=") && lastUpdateTimeMs == null -> {
-                        val timeStr = trimmed.substringAfter("firstInstallTime=").trim()
-                        lastUpdateTimeMs = parseTimestamp(timeStr)
-                    }
+            oatResult.getOrNull()?.let { output ->
+                if (output.trim().isNotEmpty() && !output.contains("No such file")) {
+                    // OAT file exists, likely optimized but we don't know the filter
+                    // Assume it's at least been compiled
+                    compilerFilter = "unknown-optimized"
                 }
             }
         }
 
-        // Simplified optimization decision:
-        // - If we couldn't determine the filter, assume it needs optimization
-        // - If the filter matches target (speed/speed-profile), it's already optimized
-        // - Otherwise, it needs optimization
+        // Decision logic:
+        // - If we found "speed-profile", "speed", or "everything" -> already optimized
+        // - If we found "unknown-optimized" -> check if we should re-optimize based on target
+        // - If we found lower quality filters or nothing -> needs optimization
         val needsOptimization: Boolean
         val skipReason: AppCompilationInfo.SkipReason?
 
-        val filter = compilerFilter // Smart cast helper
+        val filter = compilerFilter
         when {
             filter == null -> {
-                // Unknown state - optimize it
+                // No compilation info found - optimize it
                 needsOptimization = true
                 skipReason = null
+            }
+            filter == "unknown-optimized" -> {
+                // We know it's optimized but don't know the filter
+                // For speed-profile target, assume it needs optimization
+                // For speed target, skip it
+                needsOptimization = targetFilter.lowercase() == "speed-profile"
+                skipReason = if (needsOptimization) null else
+                    AppCompilationInfo.SkipReason.RecentlyOptimized(0, "compiled")
             }
             isFilterOptimalForTarget(filter, targetFilter) -> {
                 // Already has the target optimization
@@ -638,7 +790,7 @@ class AdbRepositoryImpl @Inject constructor(
         return AppCompilationInfo(
             packageName = packageName,
             compilerFilter = compilerFilter,
-            lastCompilationTimeMs = null, // We don't need this for the decision
+            lastCompilationTimeMs = null,
             lastUpdateTimeMs = lastUpdateTimeMs,
             oatFileExists = compilerFilter != null,
             skipReason = skipReason,
