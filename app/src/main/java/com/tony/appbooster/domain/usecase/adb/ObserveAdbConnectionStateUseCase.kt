@@ -1,5 +1,4 @@
-package com.tony.appbooster.domain.usecase
-
+package com.tony.appbooster.domain.usecase.adb
 import com.tony.appbooster.domain.repository.AdbConnectionState
 import com.tony.appbooster.domain.repository.AdbRepository
 import kotlinx.coroutines.flow.StateFlow

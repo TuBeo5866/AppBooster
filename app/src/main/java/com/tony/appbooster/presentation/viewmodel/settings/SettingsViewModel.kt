@@ -4,16 +4,16 @@ import androidx.lifecycle.viewModelScope
 import com.alkemy.boxapp.presentation.navigation.interfaces.NavigationManager
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.model.settings.AppOptimizationType
-import com.tony.appbooster.domain.usecase.GetAppInfoUseCase
-import com.tony.appbooster.domain.usecase.ObserveAppOptimizationTypeUseCase
-import com.tony.appbooster.domain.usecase.SetAppOptimizationTypeUseCase
+import com.tony.appbooster.domain.usecase.appinfo.GetAppInfoUseCase
+import com.tony.appbooster.domain.usecase.settings.ObserveAppOptimizationTypeUseCase
+import com.tony.appbooster.domain.usecase.settings.SetAppOptimizationTypeUseCase
 import com.tony.appbooster.domain.usecase.shizuku.ObserveShizukuStateUseCase
 import com.tony.appbooster.presentation.screen.settings.model.AppInfo
 import com.tony.appbooster.presentation.viewmodel.base.BaseViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
-import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /**
  * User intents originating from the Settings screen.

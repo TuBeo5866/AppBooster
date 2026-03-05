@@ -1,5 +1,4 @@
-package com.tony.appbooster.domain.usecase
-
+package com.tony.appbooster.domain.usecase.appinfo
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.repository.AppInfoRepository
 import com.tony.appbooster.presentation.screen.settings.model.AppInfo

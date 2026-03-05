@@ -1,5 +1,4 @@
-package com.tony.appbooster.domain.usecase
-
+package com.tony.appbooster.domain.usecase.optimization
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.repository.AdbRepository
 import javax.inject.Inject

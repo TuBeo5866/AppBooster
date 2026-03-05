@@ -4,11 +4,11 @@ package com.tony.appbooster.di
 import com.tony.appbooster.domain.repository.AdbRepository
 import com.tony.appbooster.domain.repository.AppInfoRepository
 import com.tony.appbooster.domain.repository.SettingsRepository
-import com.tony.appbooster.domain.usecase.ConnectAdbUseCase
-import com.tony.appbooster.domain.usecase.GetAppInfoUseCase
-import com.tony.appbooster.domain.usecase.ObserveAppOptimizationTypeUseCase
-import com.tony.appbooster.domain.usecase.OptimizeAppUseCase
-import com.tony.appbooster.domain.usecase.SetAppOptimizationTypeUseCase
+import com.tony.appbooster.domain.usecase.adb.ConnectAdbUseCase
+import com.tony.appbooster.domain.usecase.appinfo.GetAppInfoUseCase
+import com.tony.appbooster.domain.usecase.optimization.OptimizeAppUseCase
+import com.tony.appbooster.domain.usecase.settings.ObserveAppOptimizationTypeUseCase
+import com.tony.appbooster.domain.usecase.settings.SetAppOptimizationTypeUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

@@ -1,7 +1,8 @@
-package com.tony.appbooster.domain.usecase
+package com.tony.appbooster.domain.usecase.analysis
 
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.model.settings.AppOptimizationType
+import com.tony.appbooster.domain.usecase.adb.ConnectAdbUseCase
 import javax.inject.Inject
 
 /**

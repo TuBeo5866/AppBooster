@@ -8,8 +8,8 @@ import androidx.work.WorkerParameters
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.model.settings.AppOptimizationType
 import com.tony.appbooster.domain.repository.AdbRepository
-import com.tony.appbooster.domain.usecase.EnsureAdbConnectedUseCase
-import com.tony.appbooster.domain.usecase.RunAnalysisUseCase
+import com.tony.appbooster.domain.usecase.adb.EnsureAdbConnectedUseCase
+import com.tony.appbooster.domain.usecase.analysis.RunAnalysisUseCase
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
