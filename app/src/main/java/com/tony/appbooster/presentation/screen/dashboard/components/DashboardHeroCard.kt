@@ -195,17 +195,21 @@ fun DashboardHeroCard(
 
                     progress.isRunning -> {
                         ProcessProgressContent(
-                            title = stringResource(R.string.dashboard_optimizing_title),
-                            subtitle = "${progress.processedCount} / ${progress.totalCount} apps",
-                            progress = progress.progress,
-                            currentPackage = progress.currentAppPackage,
+                            state = ProcessProgressState.fromOptimizationProgress(
+                                progress = progress,
+                                titleText = stringResource(R.string.dashboard_optimizing_title)
+                            ),
                             onStop = onStopOptimization
                         )
                     }
 
                     model.optimizationAnalysis.isScanning -> {
-                        ScanningContent(
-                            analysis = model.optimizationAnalysis,
+                        ProcessProgressContent(
+                            state = ProcessProgressState.fromOptimizationAnalysis(
+                                analysis = model.optimizationAnalysis,
+                                titleText = stringResource(R.string.analysis_scanning_title),
+                                subtitleText = stringResource(R.string.analysis_scanning_subtitle)
+                            ),
                             onStop = onStopAnalysis
                         )
                     }

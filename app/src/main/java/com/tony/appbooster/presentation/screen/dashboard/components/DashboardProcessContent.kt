@@ -16,9 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.PersonOff
-import androidx.compose.material.icons.rounded.RocketLaunch
 import androidx.compose.material.icons.rounded.StopCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -36,31 +33,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.tony.appbooster.R
-import com.tony.appbooster.domain.model.common.OptimizationAnalysis
 
 /**
- * Unified progress content for both analysis and optimization processes.
- * Provides a consistent UI with title, progress bar, current app, stats, and stop button.
+ * Unified in-progress card shared by both optimization and analysis phases.
  *
- * @param title The title to display (e.g., "Analyzing Apps" or "Optimizing Apps").
- * @param subtitle The subtitle showing progress (e.g., "10 / 50 apps").
- * @param progress Progress value from 0f to 1f.
- * @param currentPackage Package currently being processed, empty if none.
- * @param statChips List of [ProcessStatChip] items to display in the stats row.
- *   Pass an empty list to hide the stats row entirely.
- * @param onStop Callback when stop button is pressed.
+ * All display data is supplied through a single [ProcessProgressState] so the
+ * composable contains zero domain logic and zero branching on process type.
+ *
+ * @param state Typed state describing the current process – either
+ *   [ProcessProgressState.Optimizing] or [ProcessProgressState.Scanning].
+ * @param onStop Callback invoked when the user taps the stop button.
  */
 @Composable
 internal fun ProcessProgressContent(
-    title: String,
-    subtitle: String,
-    progress: Float,
-    currentPackage: String,
-    statChips: List<ProcessStatChip> = emptyList(),
+    state: ProcessProgressState,
     onStop: () -> Unit
 ) {
     val animatedProgress by animateFloatAsState(
-        targetValue = progress,
+        targetValue = state.progress,
         animationSpec = tween(300, easing = EaseOutCubic),
         label = "progressAnimation"
     )
@@ -69,7 +59,7 @@ internal fun ProcessProgressContent(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header row with title and percentage
+        // ── Header: title + percentage badge ──────────────────────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -77,19 +67,18 @@ internal fun ProcessProgressContent(
         ) {
             Column {
                 Text(
-                    text = title,
+                    text = state.title,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = subtitle,
+                    text = state.subtitle,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            // Percentage badge
             Surface(
                 shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.primaryContainer
@@ -104,7 +93,7 @@ internal fun ProcessProgressContent(
             }
         }
 
-        // Progress bar
+        // ── Progress bar ──────────────────────────────────────────────────
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -128,8 +117,8 @@ internal fun ProcessProgressContent(
             )
         }
 
-        // Current app being processed
-        if (currentPackage.isNotEmpty()) {
+        // ── Current package chip ──────────────────────────────────────────
+        if (state.currentPackage.isNotEmpty()) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -137,14 +126,16 @@ internal fun ProcessProgressContent(
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
                     Text(
-                        text = currentPackage.substringAfterLast(".").replaceFirstChar { it.uppercase() },
+                        text = state.currentPackage
+                            .substringAfterLast(".")
+                            .replaceFirstChar { it.uppercase() },
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = currentPackage,
+                        text = state.currentPackage,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -154,22 +145,19 @@ internal fun ProcessProgressContent(
             }
         }
 
-        // Stats row – rendered only when at least one chip is provided
-        if (statChips.isNotEmpty()) {
+        // ── Live stats row – hidden when chip list is empty ───────────────
+        if (state.statChips.isNotEmpty()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                statChips.forEach { chip ->
-                    StatChipItem(
-                        chip = chip,
-                        modifier = Modifier.weight(1f)
-                    )
+                state.statChips.forEach { chip ->
+                    StatChipItem(chip = chip, modifier = Modifier.weight(1f))
                 }
             }
         }
 
-        // Stop button - full width
+        // ── Stop button ───────────────────────────────────────────────────
         Surface(
             onClick = onStop,
             modifier = Modifier.fillMaxWidth(),
@@ -203,10 +191,10 @@ internal fun ProcessProgressContent(
 /**
  * Renders a single stat chip inside the progress stats row.
  *
- * Visual colour tokens are resolved from [ProcessStatChip.style] so no
- * branching is needed at the call site.
+ * Colour tokens are resolved from [ProcessStatChip.style], keeping the
+ * rendering loop free of per-chip branching.
  *
- * @param chip Data model describing the chip's count, label, icon, and style.
+ * @param chip Model describing count, label, icon, and colour style.
  * @param modifier Optional layout modifier.
  */
 @Composable
@@ -214,7 +202,6 @@ private fun StatChipItem(
     chip: ProcessStatChip,
     modifier: Modifier = Modifier
 ) {
-    // Resolve M3 colour tokens from the style variant
     val containerColor: Color
     val contentColor: Color
     val labelColor: Color
@@ -222,18 +209,18 @@ private fun StatChipItem(
     when (chip.style) {
         ProcessStatChipStyle.Pending -> {
             containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
-            contentColor = MaterialTheme.colorScheme.error
-            labelColor = MaterialTheme.colorScheme.onErrorContainer
+            contentColor   = MaterialTheme.colorScheme.error
+            labelColor     = MaterialTheme.colorScheme.onErrorContainer
         }
         ProcessStatChipStyle.Neutral -> {
             containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.8f)
-            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-            labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+            contentColor   = MaterialTheme.colorScheme.onSurfaceVariant
+            labelColor     = MaterialTheme.colorScheme.onSurfaceVariant
         }
         ProcessStatChipStyle.Done -> {
             containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-            contentColor = MaterialTheme.colorScheme.primary
-            labelColor = MaterialTheme.colorScheme.onPrimaryContainer
+            contentColor   = MaterialTheme.colorScheme.primary
+            labelColor     = MaterialTheme.colorScheme.onPrimaryContainer
         }
     }
 
@@ -268,66 +255,4 @@ private fun StatChipItem(
             )
         }
     }
-}
-
-/**
- * Analysis scanning content that delegates to [ProcessProgressContent].
- *
- * Constructs [ProcessStatChip] instances from the current [OptimizationAnalysis]
- * state and passes them as a typed list, avoiding raw [Pair] usage.
- *
- * @param analysis Current analysis state with progress info.
- * @param onStop Callback when stop button is pressed.
- */
-@Composable
-internal fun ScanningContent(
-    analysis: OptimizationAnalysis,
-    onStop: () -> Unit
-) {
-    // Build chips only once scan has produced data worth showing
-    val chips = if (analysis.totalAppsScanned > 0) {
-        buildList {
-            add(
-                ProcessStatChip(
-                    count = analysis.appsNeedingOptimization,
-                    label = "need",
-                    icon = Icons.Rounded.RocketLaunch,
-                    style = ProcessStatChipStyle.Pending
-                )
-            )
-            // No-profile chip is shown only when there are matching apps
-            if (analysis.appsWithNoProfile > 0) {
-                add(
-                    ProcessStatChip(
-                        count = analysis.appsWithNoProfile,
-                        label = "no profile",
-                        icon = Icons.Rounded.PersonOff,
-                        style = ProcessStatChipStyle.Neutral
-                    )
-                )
-            }
-            add(
-                ProcessStatChip(
-                    count = analysis.appsAlreadyOptimized,
-                    label = "done",
-                    icon = Icons.Rounded.CheckCircle,
-                    style = ProcessStatChipStyle.Done
-                )
-            )
-        }
-    } else {
-        emptyList()
-    }
-
-    ProcessProgressContent(
-        title = stringResource(R.string.analysis_scanning_title),
-        subtitle = if (analysis.totalAppsToScan > 0)
-            "${analysis.totalAppsScanned} / ${analysis.totalAppsToScan} apps"
-        else
-            stringResource(R.string.analysis_scanning_subtitle),
-        progress = analysis.progress,
-        currentPackage = analysis.currentPackage,
-        statChips = chips,
-        onStop = onStop
-    )
 }
