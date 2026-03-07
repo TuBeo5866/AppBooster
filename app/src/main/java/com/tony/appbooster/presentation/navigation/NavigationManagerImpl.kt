@@ -1,8 +1,8 @@
 package com.tony.appbooster.presentation.navigation
 
 import androidx.navigation.NavOptions
-import com.alkemy.boxapp.presentation.navigation.interfaces.NavigationManager
-import com.example.schedapp.presentation.navigation.interfaces.NavigationCommand
+import com.tony.appbooster.presentation.navigation.interfaces.NavigationManager
+import com.tony.appbooster.presentation.navigation.interfaces.NavigationCommand
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow

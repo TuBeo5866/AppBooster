@@ -1,4 +1,4 @@
-package com.example.schedapp.presentation.navigation.interfaces
+package com.tony.appbooster.presentation.navigation.interfaces
 
 import androidx.navigation.NavOptions
 

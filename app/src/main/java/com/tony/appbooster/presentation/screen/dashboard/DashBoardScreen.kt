@@ -23,7 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.schedapp.presentation.screen.common.basescreen.ErrorDialogConfig
+import com.tony.appbooster.presentation.screen.common.basescreen.ErrorDialogConfig
 import com.tony.appbooster.R
 import com.tony.appbooster.presentation.permission.NotificationPermissionGate
 import com.tony.appbooster.presentation.screen.common.basescreen.AppBaseScreen
@@ -136,9 +136,3 @@ private fun DashboardContent(
         }
     }
 }
-
-// NOTE: The hero card and result/stat panels were extracted to:
-// - presentation/screen/dashboard/components/DashboardHeroCard.kt
-// - presentation/screen/dashboard/components/DashboardResultPanels.kt
-// - presentation/screen/dashboard/components/DashboardStats.kt
-// Keeping this file focused on screen wiring and layout.

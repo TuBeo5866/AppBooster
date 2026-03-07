@@ -3,7 +3,11 @@ package com.tony.appbooster.presentation.viewmodel.shizuku
 import com.tony.appbooster.domain.model.shizuku.ShizukuState
 
 /**
- * UI state for the Shizuku setup screen.
+ * Immutable UI state for the Shizuku setup screen.
+ *
+ * @property shizukuState Current runtime state of the Shizuku service.
+ * @property isCheckingState Whether a background status check is in progress.
+ * @property setupStep The active wizard step driving the step card and progress indicator.
  */
 data class ShizukuSetupUiModel(
     val shizukuState: ShizukuState = ShizukuState.NotRunning,
@@ -11,18 +15,3 @@ data class ShizukuSetupUiModel(
     val setupStep: ShizukuSetupStep = ShizukuSetupStep.CHECK_STATUS
 )
 
-/**
- * Steps in the Shizuku setup flow.
- */
-enum class ShizukuSetupStep {
-    /** Initial status check */
-    CHECK_STATUS,
-    /** Shizuku needs to be installed */
-    INSTALL_SHIZUKU,
-    /** Shizuku is installed but service not running */
-    START_SERVICE,
-    /** Service running, permission needed */
-    GRANT_PERMISSION,
-    /** All set up and ready */
-    READY
-}

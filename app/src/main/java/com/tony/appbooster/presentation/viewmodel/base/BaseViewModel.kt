@@ -6,10 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavDirections
 import androidx.navigation.NavOptions
-import com.alkemy.boxapp.presentation.navigation.interfaces.NavigationManager
-import com.example.schedapp.presentation.viewmodel.base.UIError
-import com.example.schedapp.presentation.viewmodel.base.UIState
-import com.example.schedapp.presentation.viewmodel.base.UIStatus
+import com.tony.appbooster.presentation.navigation.interfaces.NavigationManager
 import com.tony.appbooster.R
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.model.common.ResourceError
@@ -80,14 +77,14 @@ abstract class BaseViewModel<UI_TYPE, UI_EVENT, UI_EFFECT>(
     }
 
     /**
-     * Handles various types of errors by updating the UI state with a [com.example.schedapp.presentation.viewmodel.base.UIError].
+     * Handles various types of errors by updating the UI state with a [UIError].
      * Subclasses can override this method to provide specific error handling logic.
      *
      * @param errorObject The object representing the error, which can be a [Resource.Error],
      * a [Throwable], or any other object.
      * @param retryAction An optional lambda that can be executed to retry the failed operation.
-     * @param processUiAfterError An optional lambda to process the UI state after an error,
-     * @param processUIError An optional lambda to process the [com.example.schedapp.presentation.viewmodel.base.UIError] before updating the UI state,
+     * @param processUiAfterError An optional lambda to process the UI state after an error.
+     * @param processUIError An optional lambda to transform the [UIError] before updating UI state,
      * allowing for partial UI updates or specific data handling.
      */
     protected open fun handleError(

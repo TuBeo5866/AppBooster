@@ -1,6 +1,6 @@
 package com.tony.appbooster.presentation.viewmodel.settings
 
-import com.alkemy.boxapp.presentation.navigation.interfaces.NavigationManager
+import com.tony.appbooster.presentation.navigation.interfaces.NavigationManager
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.model.common.ResourceError
 import com.tony.appbooster.domain.model.settings.AppOptimizationType

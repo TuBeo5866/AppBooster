@@ -1,4 +1,4 @@
-package com.example.schedapp.presentation.screen.common.basescreen
+package com.tony.appbooster.presentation.screen.common.basescreen
 
 data class ErrorDialogConfig(
     val onConfirm: () -> Unit = {},

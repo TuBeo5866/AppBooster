@@ -64,8 +64,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.example.schedapp.presentation.viewmodel.base.UIState
-import com.example.schedapp.presentation.viewmodel.base.UIStatus
+import com.tony.appbooster.presentation.viewmodel.base.UIState
+import com.tony.appbooster.presentation.viewmodel.base.UIStatus
 import com.tony.appbooster.R
 import com.tony.appbooster.domain.model.settings.AppOptimizationType
 import com.tony.appbooster.domain.model.shizuku.ShizukuState

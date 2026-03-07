@@ -1,7 +1,7 @@
 package com.tony.appbooster.presentation.viewmodel.settings
 
 import androidx.lifecycle.viewModelScope
-import com.alkemy.boxapp.presentation.navigation.interfaces.NavigationManager
+import com.tony.appbooster.presentation.navigation.interfaces.NavigationManager
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.model.settings.AppOptimizationType
 import com.tony.appbooster.domain.usecase.appinfo.GetAppInfoUseCase
@@ -15,22 +15,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * User intents originating from the Settings screen.
- */
-sealed interface SettingsUiEvent {
-    /**
-     * Requests persisting a new optimization type.
-     *
-     * @property type New optimization mode selected by the user.
-     */
-    data class OnOptimizationTypeSelected(val type: AppOptimizationType) : SettingsUiEvent
-}
-
-/**
- * One-shot UI effects for Settings.
- */
-sealed interface SettingsUiEffect
 
 /**
  * ViewModel coordinating Settings behavior by combining optimization

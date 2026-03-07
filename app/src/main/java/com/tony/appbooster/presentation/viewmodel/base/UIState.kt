@@ -1,27 +1,20 @@
-package com.example.schedapp.presentation.viewmodel.base
+package com.tony.appbooster.presentation.viewmodel.base
 
 /**
- * A sealed class representing the UI state of a view.  This allows for a consistent and
- * exhaustive handling of loading, success, and error states.
+ * Immutable representation of a screen's full UI state, combining lifecycle status,
+ * domain data, and transient error information into a single value type.
  *
- * @param <T> The type of data held by the Success state.
+ * @param T The type of domain data surfaced to the UI layer.
+ * @property status Current lifecycle phase of the screen (idle, loading, success, or error).
+ * @property data Domain data snapshot; non-null when status is [UIStatus.SUCCESS] or [UIStatus.IDLE].
+ * @property error Transient error information; non-null when status is [UIStatus.ERROR].
+ * @property loginStatus Current session / authentication phase.
+ * @property showErrorDialog Whether the error dialog overlay should be displayed.
  */
-
-enum class UIStatus{ LOADING, ERROR, SUCCESS, IDLE}
-
-enum class LoginState{ DEFAULT, LOGGED_IN, LOGGED_OUT, ERROR, SESSION_EXPIRED}
-
-data class UIError(
-    val title: String,
-    val message: String,
-    val type: Any? = null,
-    val retryAction: (() -> Unit)? = null
-)
-
 data class UIState<T>(
-    val status : UIStatus = UIStatus.IDLE,
-    val data : T? = null,
-    val error : UIError? = null,
-    val loginStatus : LoginState = LoginState.DEFAULT,
-    var showErrorDialog: Boolean = false
+    val status: UIStatus = UIStatus.IDLE,
+    val data: T? = null,
+    val error: UIError? = null,
+    val loginStatus: LoginState = LoginState.DEFAULT,
+    val showErrorDialog: Boolean = false
 )

@@ -1,4 +1,4 @@
-package com.example.schedapp.presentation.navigation.ext
+package com.tony.appbooster.presentation.navigation.ext
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember

@@ -5,8 +5,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.alkemy.boxapp.presentation.navigation.interfaces.NavigationManager
-import com.example.schedapp.presentation.navigation.interfaces.NavigationCommand
+import com.tony.appbooster.presentation.navigation.interfaces.NavigationManager
+import com.tony.appbooster.presentation.navigation.interfaces.NavigationCommand
 
 /**
  * A composable that manages the app's navigation.

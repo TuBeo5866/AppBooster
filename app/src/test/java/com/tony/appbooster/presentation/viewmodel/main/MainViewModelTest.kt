@@ -2,8 +2,8 @@ package com.tony.appbooster.presentation.viewmodel.main
 
 import android.content.Context
 import app.cash.turbine.test
-import com.alkemy.boxapp.presentation.navigation.interfaces.NavigationManager
-import com.example.schedapp.presentation.viewmodel.base.UIStatus
+import com.tony.appbooster.presentation.navigation.interfaces.NavigationManager
+import com.tony.appbooster.presentation.viewmodel.base.UIStatus
 import com.tony.appbooster.domain.model.common.OptimizationAnalysis
 import com.tony.appbooster.domain.model.common.OptimizationProgress
 import com.tony.appbooster.domain.model.common.OptimizationResult

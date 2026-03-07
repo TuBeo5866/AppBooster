@@ -1,6 +1,6 @@
 package com.tony.appbooster.di
 
-import com.alkemy.boxapp.presentation.navigation.interfaces.NavigationManager
+import com.tony.appbooster.presentation.navigation.interfaces.NavigationManager
 import com.tony.appbooster.presentation.navigation.NavigationManagerImpl
 
 import dagger.Binds

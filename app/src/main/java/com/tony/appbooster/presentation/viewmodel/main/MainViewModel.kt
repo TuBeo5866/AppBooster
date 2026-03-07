@@ -2,7 +2,7 @@ package com.tony.appbooster.presentation.viewmodel.main
 
 import android.content.Context
 import androidx.lifecycle.viewModelScope
-import com.alkemy.boxapp.presentation.navigation.interfaces.NavigationManager
+import com.tony.appbooster.presentation.navigation.interfaces.NavigationManager
 import com.tony.appbooster.R
 import com.tony.appbooster.domain.model.common.Resource
 import com.tony.appbooster.domain.model.common.ResourceError

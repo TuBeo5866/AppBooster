@@ -10,9 +10,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.DialogProperties
-import com.example.schedapp.presentation.screen.common.basescreen.ErrorDialogConfig
-import com.example.schedapp.presentation.viewmodel.base.UIState
-import com.example.schedapp.presentation.viewmodel.base.UIStatus
+import com.tony.appbooster.presentation.viewmodel.base.UIState
+import com.tony.appbooster.presentation.viewmodel.base.UIStatus
 import com.tony.appbooster.R
 import com.tony.appbooster.presentation.screen.common.LoadingScreen
 
