@@ -27,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -145,16 +144,9 @@ internal fun ProcessProgressContent(
             }
         }
 
-        // ── Live stats row – hidden when chip list is empty ───────────────
+        // ── Live stats – same dot-row surface as the result panel ─────────
         if (state.statChips.isNotEmpty()) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                state.statChips.forEach { chip ->
-                    StatChipItem(chip = chip, modifier = Modifier.weight(1f))
-                }
-            }
+            OptimizationStatsRow(chips = state.statChips)
         }
 
         // ── Stop button ───────────────────────────────────────────────────
@@ -184,75 +176,6 @@ internal fun ProcessProgressContent(
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
-        }
-    }
-}
-
-/**
- * Renders a single stat chip inside the progress stats row.
- *
- * Colour tokens are resolved from [ProcessStatChip.style], keeping the
- * rendering loop free of per-chip branching.
- *
- * @param chip Model describing count, label, icon, and colour style.
- * @param modifier Optional layout modifier.
- */
-@Composable
-private fun StatChipItem(
-    chip: ProcessStatChip,
-    modifier: Modifier = Modifier
-) {
-    val containerColor: Color
-    val contentColor: Color
-    val labelColor: Color
-
-    when (chip.style) {
-        ProcessStatChipStyle.Pending -> {
-            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
-            contentColor   = MaterialTheme.colorScheme.error
-            labelColor     = MaterialTheme.colorScheme.onErrorContainer
-        }
-        ProcessStatChipStyle.Neutral -> {
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.8f)
-            contentColor   = MaterialTheme.colorScheme.onSurfaceVariant
-            labelColor     = MaterialTheme.colorScheme.onSurfaceVariant
-        }
-        ProcessStatChipStyle.Done -> {
-            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-            contentColor   = MaterialTheme.colorScheme.primary
-            labelColor     = MaterialTheme.colorScheme.onPrimaryContainer
-        }
-    }
-
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(10.dp),
-        color = containerColor
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = chip.icon,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = contentColor
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = "${chip.count}",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = contentColor
-            )
-            Spacer(Modifier.width(4.dp))
-            Text(
-                text = chip.label,
-                style = MaterialTheme.typography.bodySmall,
-                color = labelColor
-            )
         }
     }
 }

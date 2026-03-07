@@ -1,9 +1,5 @@
 package com.tony.appbooster.presentation.screen.dashboard.components
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.PersonOff
-import androidx.compose.material.icons.rounded.RocketLaunch
 import com.tony.appbooster.domain.model.common.OptimizationAnalysis
 import com.tony.appbooster.domain.model.common.OptimizationProgress
 
@@ -106,7 +102,6 @@ sealed interface ProcessProgressState {
                         ProcessStatChip(
                             count = analysis.appsNeedingOptimization,
                             label = "need",
-                            icon = Icons.Rounded.RocketLaunch,
                             style = ProcessStatChipStyle.Pending
                         )
                     )
@@ -116,7 +111,6 @@ sealed interface ProcessProgressState {
                             ProcessStatChip(
                                 count = analysis.appsWithNoProfile,
                                 label = "no profile",
-                                icon = Icons.Rounded.PersonOff,
                                 style = ProcessStatChipStyle.Neutral
                             )
                         )
@@ -125,7 +119,6 @@ sealed interface ProcessProgressState {
                         ProcessStatChip(
                             count = analysis.appsAlreadyOptimized,
                             label = "done",
-                            icon = Icons.Rounded.CheckCircle,
                             style = ProcessStatChipStyle.Done
                         )
                     )
