@@ -23,10 +23,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.tony.appbooster.presentation.screen.common.basescreen.ErrorDialogConfig
 import com.tony.appbooster.R
 import com.tony.appbooster.presentation.permission.NotificationPermissionGate
 import com.tony.appbooster.presentation.screen.common.basescreen.AppBaseScreen
+import com.tony.appbooster.presentation.screen.common.basescreen.ErrorDialogConfig
 import com.tony.appbooster.presentation.screen.dashboard.components.DashboardHeroCard
 import com.tony.appbooster.presentation.screen.dashboard.components.OptimizationActivityFeed
 import com.tony.appbooster.presentation.viewmodel.main.MainUiEffect
@@ -104,7 +104,7 @@ private fun DashboardContent(
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
         },

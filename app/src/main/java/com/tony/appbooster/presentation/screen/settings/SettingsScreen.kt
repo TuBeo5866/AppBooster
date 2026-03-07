@@ -64,12 +64,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.tony.appbooster.presentation.viewmodel.base.UIState
-import com.tony.appbooster.presentation.viewmodel.base.UIStatus
 import com.tony.appbooster.R
 import com.tony.appbooster.domain.model.settings.AppOptimizationType
 import com.tony.appbooster.domain.model.shizuku.ShizukuState
 import com.tony.appbooster.presentation.screen.common.basescreen.AppBaseScreen
+import com.tony.appbooster.presentation.viewmodel.base.UIState
+import com.tony.appbooster.presentation.viewmodel.base.UIStatus
 import com.tony.appbooster.presentation.viewmodel.settings.SettingsUiState
 import com.tony.appbooster.presentation.viewmodel.settings.SettingsViewModel
 
@@ -132,7 +132,7 @@ fun SettingsScreenContent(
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
         },
