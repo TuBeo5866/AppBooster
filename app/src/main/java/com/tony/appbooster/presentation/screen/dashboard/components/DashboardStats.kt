@@ -39,13 +39,18 @@ import com.tony.appbooster.presentation.ui.theme.AppBoosterTheme
  *
  * @param needsOptimizationCount Number of apps that still need optimization.
  * @param optimizedCount Number of apps already optimized.
- * @param noProfileCount Number of apps with no runtime profile; row is omitted when 0.
+ * @param noProfileCount Number of apps with no runtime profile; row is omitted when 0 or when
+ *   [showNoProfile] is false.
+ * @param showNoProfile Whether to display the "no profile" row at all. Set to false in
+ *   speed (full compilation) mode because profile files are irrelevant there —
+ *   every app is compiled unconditionally.
  */
 @Composable
 fun OptimizationStatsRow(
     needsOptimizationCount: Int,
     optimizedCount: Int,
-    noProfileCount: Int = 0
+    noProfileCount: Int = 0,
+    showNoProfile: Boolean = true
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -69,7 +74,7 @@ fun OptimizationStatsRow(
                 label = stringResource(R.string.analysis_card_optimized),
                 dotColor = MaterialTheme.colorScheme.tertiary
             )
-            if (noProfileCount > 0) {
+            if (noProfileCount > 0 && showNoProfile) {
                 StatRow(
                     count = noProfileCount,
                     label = stringResource(R.string.analysis_card_no_profile),

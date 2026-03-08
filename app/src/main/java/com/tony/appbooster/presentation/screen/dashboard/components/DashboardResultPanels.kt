@@ -43,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.tony.appbooster.R
+import com.tony.appbooster.domain.model.settings.AppOptimizationType
 import com.tony.appbooster.presentation.ui.theme.AppBoosterTheme
 
 
@@ -190,18 +191,22 @@ fun HeroResultPanel(
 
         if (showStats) {
             Spacer(Modifier.height(16.dp))
+            val isSpeedProfile = status.optimizationMode == AppOptimizationType.SPEED_PROFILE
             if (status is HeroCardStatus.Completed) {
                 OptimizationStatsRow(
                     needsOptimizationCount = 0,
-                    // processedCount = freshly compiled; skippedCount = already optimal
-                    optimizedCount = status.processedCount,
-                    noProfileCount = status.skippedCount
+                    // processedCount = freshly compiled; skippedCount - noProfileCount = already optimal
+                    optimizedCount = status.processedCount + (status.skippedCount - status.noProfileCount).coerceAtLeast(0),
+                    noProfileCount = status.noProfileCount,
+                    showNoProfile = isSpeedProfile
                 )
             } else if (status is HeroCardStatus.Canceled) {
                 OptimizationStatsRow(
                     needsOptimizationCount = (status.totalCount - (status.processedCount + status.skippedCount))
                         .coerceAtLeast(0),
-                    optimizedCount = status.processedCount + status.skippedCount
+                    optimizedCount = status.processedCount + (status.skippedCount - status.noProfileCount).coerceAtLeast(0),
+                    noProfileCount = status.noProfileCount,
+                    showNoProfile = isSpeedProfile
                 )
             }
         }

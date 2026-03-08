@@ -35,11 +35,6 @@
   </a>
 </p>
 
-<p align="center">
-  <a href="https://play.google.com/store/apps/details?id=com.tony.appbooster">
-    <img src="https://img.shields.io/badge/Google_Play-Download-414141?style=for-the-badge&logo=google-play&logoColor=white" alt="Get it on Google Play"/>
-  </a>
-</p>
 
 ---
 

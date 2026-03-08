@@ -42,7 +42,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -106,7 +108,34 @@ fun DashboardHeroCard(
         label = "cardElevation"
     )
 
-    val isResultDismissed = model.isCurrentResultDismissed
+    // Derive a stable phase key so AnimatedContent only transitions when the
+    // *phase* changes (Idle → Optimizing → Completed, etc.).
+    // Without this, keying on the full OptimizationProgress object causes the
+    // bounce animation to fire on every per-app progress tick.
+    val heroPhase by remember(model) {
+        derivedStateOf {
+            val progress = model.optimizationProgress
+            val result = progress.result
+            when {
+                result is OptimizationResult.Completed
+                    && progress.processedCount == 0
+                    && progress.skippedCount > 0
+                    && !model.isCurrentResultDismissed -> HeroPhase.ALL_OPTIMIZED
+
+                result is OptimizationResult.Completed
+                    && !model.isCurrentResultDismissed -> HeroPhase.RESULT_COMPLETED
+
+                result is OptimizationResult.Canceled
+                    && !model.isCurrentResultDismissed -> HeroPhase.RESULT_CANCELED
+
+                progress.isRunning -> HeroPhase.OPTIMIZING
+
+                model.optimizationAnalysis.isScanning -> HeroPhase.SCANNING
+
+                else -> HeroPhase.READY
+            }
+        }
+    }
 
     Card(
         modifier = Modifier
@@ -137,7 +166,7 @@ fun DashboardHeroCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             AnimatedContent(
-                targetState = model.optimizationProgress,
+                targetState = heroPhase,
                 label = "heroResultSwap",
                 transitionSpec = {
                     (slideInVertically(
@@ -150,57 +179,60 @@ fun DashboardHeroCard(
                         ) + fadeOut(tween(200))
                     ).using(SizeTransform(clip = false))
                 }
-            ) { progress ->
-                val result = progress.result
-                when {
-                    result is OptimizationResult.Completed &&
-                        progress.processedCount == 0 &&
-                        progress.skippedCount > 0 &&
-                        !isResultDismissed -> {
+            ) { phase ->
+                // Live data is read from `model` (outer scope) so progress ticks
+                // cause normal recomposition without triggering a new animation.
+                when (phase) {
+                    HeroPhase.ALL_OPTIMIZED -> {
                         HeroResultPanel(
                             status = HeroCardStatus.AllOptimized(
                                 optimizedCount = model.optimizationAnalysis.appsAlreadyOptimized,
-                                noProfileCount = model.optimizationAnalysis.appsWithNoProfile
+                                noProfileCount = model.optimizationAnalysis.appsWithNoProfile,
+                                optimizationMode = model.optimizationMode
                             ),
                             onDismiss = onDismissResult
                         )
                     }
 
-                    result is OptimizationResult.Completed && !isResultDismissed -> {
+                    HeroPhase.RESULT_COMPLETED -> {
                         HeroResultPanel(
                             status = HeroCardStatus.Completed(
-                                processedCount = progress.processedCount,
-                                skippedCount = progress.skippedCount,
-                                totalCount = progress.totalCount
+                                processedCount = model.optimizationProgress.processedCount,
+                                skippedCount = model.optimizationProgress.skippedCount,
+                                totalCount = model.optimizationProgress.totalCount,
+                                noProfileCount = model.optimizationAnalysis.appsWithNoProfile,
+                                optimizationMode = model.optimizationMode
                             ),
                             onDismiss = onDismissResult,
                             onRunAgain = onStartOptimization
                         )
                     }
 
-                    result is OptimizationResult.Canceled && !isResultDismissed -> {
+                    HeroPhase.RESULT_CANCELED -> {
                         HeroResultPanel(
                             status = HeroCardStatus.Canceled(
-                                processedCount = progress.processedCount,
-                                skippedCount = progress.skippedCount,
-                                totalCount = progress.totalCount
+                                processedCount = model.optimizationProgress.processedCount,
+                                skippedCount = model.optimizationProgress.skippedCount,
+                                totalCount = model.optimizationProgress.totalCount,
+                                noProfileCount = model.optimizationAnalysis.appsWithNoProfile,
+                                optimizationMode = model.optimizationMode
                             ),
                             onDismiss = onDismissResult,
                             onRunAgain = onStartOptimization
                         )
                     }
 
-                    progress.isRunning -> {
+                    HeroPhase.OPTIMIZING -> {
                         ProcessProgressContent(
                             state = ProcessProgressState.fromOptimizationProgress(
-                                progress = progress,
+                                progress = model.optimizationProgress,
                                 titleText = stringResource(R.string.dashboard_optimizing_title)
                             ),
                             onStop = onStopOptimization
                         )
                     }
 
-                    model.optimizationAnalysis.isScanning -> {
+                    HeroPhase.SCANNING -> {
                         ProcessProgressContent(
                             state = ProcessProgressState.fromOptimizationAnalysis(
                                 analysis = model.optimizationAnalysis,
@@ -211,7 +243,7 @@ fun DashboardHeroCard(
                         )
                     }
 
-                    else -> {
+                    HeroPhase.READY -> {
                         ReadyContent(
                             optimizationMode = model.optimizationMode,
                             analysis = model.optimizationAnalysis,
@@ -342,12 +374,13 @@ private fun ReadyContent(
 
         when {
             analysis.hasScanned -> {
-                OptimizationStatsRow(
-                    needsOptimizationCount = analysis.appsNeedingOptimization,
-                    optimizedCount = analysis.appsAlreadyOptimized,
-                    noProfileCount = analysis.appsWithNoProfile
-                )
-            }
+                    OptimizationStatsRow(
+                        needsOptimizationCount = analysis.appsNeedingOptimization,
+                        optimizedCount = analysis.appsAlreadyOptimized,
+                        noProfileCount = analysis.appsWithNoProfile,
+                        showNoProfile = optimizationMode == AppOptimizationType.SPEED_PROFILE
+                    )
+                }
 
             else -> {
                 Surface(
@@ -388,3 +421,20 @@ private fun ReadyContent(
         }
     }
 }
+
+/**
+ * Stable discriminator used as the [AnimatedContent] key in [DashboardHeroCard].
+ *
+ * Keying on this enum instead of the full domain progress object ensures that
+ * the slide/fade transition fires only when the *phase* changes (e.g. Idle → Optimizing),
+ * not on every per-app progress tick within the same phase.
+ */
+private enum class HeroPhase {
+    READY,
+    SCANNING,
+    OPTIMIZING,
+    RESULT_COMPLETED,
+    RESULT_CANCELED,
+    ALL_OPTIMIZED
+}
+
