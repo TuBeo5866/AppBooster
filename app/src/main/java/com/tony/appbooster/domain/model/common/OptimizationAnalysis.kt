@@ -1,5 +1,7 @@
 package com.tony.appbooster.domain.model.common
 
+import com.tony.appbooster.domain.model.settings.AppOptimizationType
+
 /**
  * Represents the result of a pre-optimization analysis scan.
  *
@@ -16,6 +18,8 @@ package com.tony.appbooster.domain.model.common
  * @property isScanning Whether the analysis is currently in progress.
  * @property currentPackage Package currently being analyzed, empty if not scanning.
  * @property lastScanTimeMs Timestamp of when the last scan completed, or null if never scanned.
+ * @property mode The optimization mode this analysis was computed for, or null if not yet scanned.
+ *           Used to invalidate the cache when the user switches modes before re-running.
  */
 data class OptimizationAnalysis(
     val totalAppsScanned: Int = 0,
@@ -26,7 +30,8 @@ data class OptimizationAnalysis(
     val packagesNeedingOptimization: List<String> = emptyList(),
     val isScanning: Boolean = false,
     val currentPackage: String = "",
-    val lastScanTimeMs: Long? = null
+    val lastScanTimeMs: Long? = null,
+    val mode: AppOptimizationType? = null
 ) {
     /**
      * Whether a scan has been completed at least once.

@@ -226,10 +226,13 @@ class AdbRepositoryImpl @Inject constructor(
 
             addLog("Found ${allPackages.size} installed packages.")
 
-            // A cached analysis is considered valid if it exists and was computed for at least one package.
-            // Note: if appsNeedingOptimization == 0 we still consider it valid (means “all optimized”).
+            // A cached analysis is valid only if it was computed for the same mode that is
+            // being requested now. Switching from speed-profile to speed (or vice-versa)
+            // changes which apps are eligible, so the cached package list would be wrong.
             val existingAnalysis = _optimizationAnalysis.value
-            val analysisIsValid = existingAnalysis.lastScanTimeMs != null && existingAnalysis.totalAppsScanned > 0
+            val analysisIsValid = existingAnalysis.lastScanTimeMs != null
+                && existingAnalysis.totalAppsScanned > 0
+                && existingAnalysis.mode == mode
 
             val packagesToOptimize: List<String>
             val skippedCount: Int
@@ -398,7 +401,8 @@ class AdbRepositoryImpl @Inject constructor(
                 appsAlreadyOptimized = prevAnalysis.appsAlreadyOptimized + total,
                 appsWithNoProfile = prevAnalysis.appsWithNoProfile,
                 isScanning = false,
-                lastScanTimeMs = System.currentTimeMillis()
+                lastScanTimeMs = System.currentTimeMillis(),
+                mode = mode
             )
 
             _optimizationProgress.value = _optimizationProgress.value.copy(
@@ -464,7 +468,8 @@ class AdbRepositoryImpl @Inject constructor(
                     appsNeedingOptimization = 0,
                     appsAlreadyOptimized = 0,
                     isScanning = false,
-                    lastScanTimeMs = System.currentTimeMillis()
+                    lastScanTimeMs = System.currentTimeMillis(),
+                    mode = mode
                 )
                 _optimizationAnalysis.value = result
                 return@runCatching result
@@ -564,7 +569,8 @@ class AdbRepositoryImpl @Inject constructor(
                 packagesNeedingOptimization = packagesNeedingOptimizationList,
                 isScanning = false,
                 currentPackage = "",
-                lastScanTimeMs = System.currentTimeMillis()
+                lastScanTimeMs = System.currentTimeMillis(),
+                mode = mode
             )
             _optimizationAnalysis.value = result
 
