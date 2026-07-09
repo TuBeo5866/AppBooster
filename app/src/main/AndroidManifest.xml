@@ -62,7 +62,8 @@
             android:name=".presentation.worker.OptimizationWorkerStopReceiver"
             android:exported="false" />
 
-        <!-- Shizuku Provider for privileged operations -->
+        <!-- Shizuku Provider for privileged operations | REMOVED (Shizuku already has `ShizukuProvider` in its app, so this provider is obsolete.) -->
+        <!--
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
@@ -70,6 +71,7 @@
             android:enabled="true"
             android:exported="true"
             android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+        -->
     </application>
 
 </manifest>
